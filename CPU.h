@@ -5,6 +5,8 @@
 #include "DRAM.h"
 #include "MMU.h"
 
+#include<string>
+
 enum REG_NAME {
     ZERO = 0,
     RA = 1,
@@ -43,6 +45,7 @@ enum REG_NAME {
 
 enum OPCODE {
     R = 0x33,
+    I=0x03,
     I_03 = 0x03,
     I_LB = 0x03,  // load
     I_13 = 0x13,
@@ -65,13 +68,14 @@ class CPU {
    private:
     /* data */
    public:
-    CPU(MemoryMangerUnit* _mmu, uint32_t _pc, uint32_t stack_point);
+    CPU(MemoryMangerUnit* _mmu, uint64_t _pc, uint64_t stack_point);
     ~CPU();
     MemoryMangerUnit* MMU;
     uint64_t PC;
-    uint64_t reg[32];
+    uint64_t reg[32]={0};
     // uint32_t reg_lock[32];
-    bitset<32> reg_lock = 0;
+    // bitset<32> reg_lock = 0;
+    uint64_t reg_lock[32]={0};
     bool exit_flag = false;
     uint64_t cycle_count = 0;
     uint64_t branch_predict();
@@ -86,8 +90,11 @@ class CPU {
 
     void ecall();
 
-    bool stop_flag = false;
-    uint64_t extender(int32_t imm, uint8_t len);
+    bool stop_if_flag = false;
+    uint64_t extender(uint32_t imm, uint8_t len,bool signext);
+    bool check_lock(REG_NAME r);
+    bool check_lock_ecall();
+    // uint32_t get_imm(uint32_t inst,OPCODE type);
 
     struct IFID {
         bool stop = true;
@@ -100,9 +107,9 @@ class CPU {
         bool stop = true;
         REG_NAME rd = ZERO, rs1 = ZERO, rs2 = ZERO;
         uint8_t opcode = 0, funct3 = 0;
-        uint8_t fun7 = 0;
+        uint8_t func7 = 0;
         // uint32_t stall=0;
-        int32_t imm = 0;
+        uint32_t imm = 0;
         uint64_t pc = 0;
         uint64_t rs1_reg = 0, rs2_reg = 0;
     } idex_new, idex_old;
@@ -131,6 +138,8 @@ class CPU {
         bool Ctrl_WB_MemtoReg = false;
 
     } memwb_new, memwb_old;
+
+    void error(const char* fmt, ...);
 };
 
 #endif
