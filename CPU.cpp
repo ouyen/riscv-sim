@@ -1,6 +1,6 @@
 #include "CPU.h"
 #include <stdarg.h>
-#include<string.h>
+#include <string.h>
 
 void CPU::error(const char* fmt, ...) {
     va_list args;
@@ -56,10 +56,10 @@ void CPU::run() {
         exmem_old = exmem_new;
         memwb_old = memwb_new;
 
-        memset(&ifid_new,0,sizeof(ifid_new));
-        memset(&idex_new,0,sizeof(idex_new));
-        memset(&exmem_new,0,sizeof(exmem_new));
-        memset(&memwb_new,0,sizeof(memwb_new));
+        memset(&ifid_new, 0, sizeof(ifid_new));
+        memset(&idex_new, 0, sizeof(idex_new));
+        memset(&exmem_new, 0, sizeof(exmem_new));
+        memset(&memwb_new, 0, sizeof(memwb_new));
 
         reg[0] = 0;
     }
@@ -80,11 +80,11 @@ void CPU::IF() {  //取指
 
 void CPU::ID() {
     if (ifid_old.bubble) {
-        idex_new.bubble=true;
+        idex_new.bubble = true;
         return;
     }
 
-    idex_new.pc=ifid_old.pc;
+    idex_new.pc = ifid_old.pc;
 
     // idex_new.stop = false;
     uint32_t inst = ifid_old.instruction;
@@ -98,7 +98,7 @@ void CPU::ID() {
     inst >>= 5;
     idex_new.rs2 = (REG_NAME)(inst & 0x1f);
     inst >>= 5;
-    idex_new.func7 = inst;
+    idex_new.funct7 = inst;
 
     inst = ifid_old.instruction;  // for imm later
     // tmp use
@@ -111,19 +111,25 @@ void CPU::ID() {
     switch ((OPCODE)idex_new.opcode) {
         // deal with imm , reg_val , add lock , check lock
         case R:
-            lock = check_lock(rs1) | check_lock(rs2);
-            reg_lock[rd] = ifid_old.pc;
+            // lock = check_lock(rs1) | check_lock(rs2);
+            // reg_lock[rd] = ifid_old.pc;
             idex_new.rs1_reg = reg[rs1];
             idex_new.rs2_reg = reg[rs2];
+            idex_new.Ctrl_WB=WB_ALU;
             break;
         case I_LB:
+        imm = (inst >> 20);
+            idex_new.rs1_reg = reg[rs1];
+            idex_new.Ctrl_M_MemRead=true;
+            idex_new.Ctrl_WB=WB_MEM;
         case I_ADDI:
+
         case I_ADDIW:
         case I_JALR:
             imm = (inst >> 20);
-            lock = check_lock(rs1);
             idex_new.rs1_reg = reg[rs1];
-            reg_lock[rd] = ifid_old.pc;
+            // lock = check_lock(rs1);
+            // reg_lock[rd] = ifid_old.pc;
             break;
         case I_ECALL:
             lock = check_lock_ecall();
@@ -158,13 +164,40 @@ void CPU::ID() {
     idex_new.bubble = lock;
     reg_lock[0] = 0;
     idex_new.imm = imm;
+    if(idex_old.Ctrl_WB==WB_WRITE_REG_FROM::WB_MEM and idex_old.rd!=ZERO and (idex_old.rd==idex_new.rs1 or idex_old.rd==idex_new.rs2)){
+        // TODO: pipline stall
+    }
     return;
 }
 
-void CPU::EX(){
-    
+void CPU::EX() {
+    if (idex_old.bubble) {
+        exmem_new.bubble = true;
+        return;
+    }
+    exmem_new.bubble = false;
+    exmem_new.pc = idex_old.pc;
+    exmem_new.rd=idex_old.rd;
+
+    uint64_t r1 = idex_old.rs1_reg;
+    uint64_t r2 = idex_old.rs2_reg;
+    // TODO: data hazards flag
+    // 数据前递 data forward
+
+
+
+    switch ((OPCODE)idex_old.opcode) {
+        case R:
+            exmem_new.alu_out=ALU_R(r1,r2,idex_old.funct3<<8|idex_old.funct7);
+            break;
+        case I_03:
+
+            break;
+        default:
+            break;
+    }
 }
 
-void CPU::MEM(){}
+void CPU::MEM() {}
 
-void CPU::WB(){}
+void CPU::WB() {}

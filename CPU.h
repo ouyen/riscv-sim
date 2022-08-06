@@ -5,7 +5,7 @@
 #include "DRAM.h"
 #include "MMU.h"
 
-#include<string>
+#include <string>
 
 enum REG_NAME {
     ZERO = 0,
@@ -45,7 +45,8 @@ enum REG_NAME {
 
 enum OPCODE {
     R = 0x33,
-    I=0x03,
+
+    I = 0x03,
     I_03 = 0x03,
     I_LB = 0x03,  // load
     I_13 = 0x13,
@@ -55,13 +56,25 @@ enum OPCODE {
     I_67 = 0x67,
     I_JALR = 0x67,
     I_73 = 0x73,
+
     I_ECALL = 0x73,
+
     S = 0x23,  // store
     SB = 0x63,
+
     U = 0x17,
+    U_17 = 0x17,
     U_AUIPC = 0x17,
+    U_37 = 0x37,
     U_LUI = 0x37,
+
     UJ = 0x6f,
+};
+
+enum WB_WRITE_REG_FROM{
+    NOT_WRITE=0,
+    WB_ALU=1,
+    WB_MEM=2,
 };
 
 class CPU {
@@ -72,10 +85,10 @@ class CPU {
     ~CPU();
     MemoryMangerUnit* MMU;
     uint64_t PC;
-    uint64_t reg[32]={0};
+    uint64_t reg[32] = {0};
     // uint32_t reg_lock[32];
     // bitset<32> reg_lock = 0;
-    uint64_t reg_lock[32]={0};
+    uint64_t reg_lock[32] = {0};
     bool exit_flag = false;
     uint64_t cycle_count = 0;
     uint64_t branch_predict();
@@ -91,7 +104,7 @@ class CPU {
     void ecall();
 
     bool stop_if_flag = false;
-    uint64_t extender(uint32_t imm, uint8_t len,bool signext);
+    uint64_t extender(uint32_t imm, uint8_t len, bool signext);
     bool check_lock(REG_NAME r);
     bool check_lock_ecall();
     // uint32_t get_imm(uint32_t inst,OPCODE type);
@@ -105,41 +118,53 @@ class CPU {
 
     struct IDEX {
         bool bubble = true;
-        REG_NAME rd = ZERO, rs1 = ZERO, rs2 = ZERO;
-        uint8_t opcode = 0, funct3 = 0;
-        uint8_t func7 = 0;
-        // uint32_t stall=0;
-        uint32_t imm = 0;
-        uint64_t pc = 0;
-        uint64_t rs1_reg = 0, rs2_reg = 0;
-    } idex_new, idex_old;
 
-    struct EXMEM {
-        bool bubble = true;
+        REG_NAME rs1 = ZERO, rs2 = ZERO;
+        uint8_t opcode = 0, funct3 = 0;
+        uint8_t funct7 = 0;
+        uint32_t imm = 0;
+        uint64_t rs1_reg = 0, rs2_reg = 0;
+
         uint64_t pc = 0;
-        uint64_t alu = 0;
-        uint64_t address = 0;
         REG_NAME rd = ZERO;
 
         bool Ctrl_M_MemWrite = false;
         bool Ctrl_M_MemRead = false;
 
-        bool Ctrl_WB_RegWrite = false;
-        bool Ctrl_WB_MemtoReg = false;
+        WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
+
+    } idex_new, idex_old;
+
+    struct EXMEM {
+        bool bubble = true;
+
+        uint64_t address = 0;
+        uint64_t alu_out = 0;
+
+        uint64_t pc = 0;
+        REG_NAME rd = ZERO;
+
+        bool Ctrl_M_MemWrite = false;
+        bool Ctrl_M_MemRead = false;
+
+        WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
 
     } exmem_new, exmem_old;
 
     struct MEMWB {
         bool bubble = true;
-        uint64_t mem_out = 0;
-        uint64_t alu_out = 0;
 
-        bool Ctrl_WB_RegWrite = false;
-        bool Ctrl_WB_MemtoReg = false;
+        uint64_t mem_out = 0;
+
+        uint64_t alu_out = 0;
+        REG_NAME rd = ZERO;
+
+        WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
 
     } memwb_new, memwb_old;
 
     void error(const char* fmt, ...);
+    uint64_t ALU_R(uint64_t r1, uint64_t r2, uint16_t func3_func7);
 };
 
 #endif
