@@ -71,7 +71,7 @@ void CPU::IF() {  //取指
         return;
     }
     ifid_new.instruction = MMU->load_4byte(PC);
-    ifid_new.stop = false;
+    ifid_new.bubble = false;
     ifid_new.pc = PC;
     if (1) {
         PC = PC + 4;
@@ -79,11 +79,14 @@ void CPU::IF() {  //取指
 }
 
 void CPU::ID() {
-    if (ifid_old.stop) {
-        idex_new = idex_old;
+    if (ifid_old.bubble) {
+        idex_new.bubble=true;
         return;
     }
-    idex_new.stop = false;
+
+    idex_new.pc=ifid_old.pc;
+
+    // idex_new.stop = false;
     uint32_t inst = ifid_old.instruction;
     idex_new.opcode = inst & 0x7f;
     inst >>= 7;
@@ -152,14 +155,14 @@ void CPU::ID() {
             error("ID ERROR: opcode %x not found\n", idex_new.opcode);
             break;
     }
-    idex_new.stop = lock;
+    idex_new.bubble = lock;
     reg_lock[0] = 0;
     idex_new.imm = imm;
     return;
 }
 
 void CPU::EX(){
-
+    
 }
 
 void CPU::MEM(){}

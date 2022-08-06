@@ -97,14 +97,14 @@ class CPU {
     // uint32_t get_imm(uint32_t inst,OPCODE type);
 
     struct IFID {
-        bool stop = true;
+        bool bubble = true;
         // uint32_t stall=0;
         uint32_t instruction = 0;
         uint64_t pc = 0;
     } ifid_new, ifid_old;
 
     struct IDEX {
-        bool stop = true;
+        bool bubble = true;
         REG_NAME rd = ZERO, rs1 = ZERO, rs2 = ZERO;
         uint8_t opcode = 0, funct3 = 0;
         uint8_t func7 = 0;
@@ -115,7 +115,7 @@ class CPU {
     } idex_new, idex_old;
 
     struct EXMEM {
-        bool stop = true;
+        bool bubble = true;
         uint64_t pc = 0;
         uint64_t alu = 0;
         uint64_t address = 0;
@@ -130,7 +130,7 @@ class CPU {
     } exmem_new, exmem_old;
 
     struct MEMWB {
-        bool stop = true;
+        bool bubble = true;
         uint64_t mem_out = 0;
         uint64_t alu_out = 0;
 
