@@ -1,3 +1,5 @@
+#ifndef _SIM_CPP
+#define _SIM_CPP
 #include "CPU.h"
 #include "MMU.h"
 
@@ -57,3 +59,5 @@ void loadElfToMemory(ELFIO::elfio *reader,MemoryMangerUnit *mmu){
     }
   }
 }
+
+#endif

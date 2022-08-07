@@ -47,6 +47,11 @@ void CPU::run() {
         ++cycle_count;
 
         IF();
+        #ifdef DEBUG
+        cout<<"Cycle: "<<cycle_count<<endl;
+        cout<<"PC: "<<ifid_new.pc<<endl;
+        cout<<"Inst: "<<ifid_new.instruction<<endl;
+        #endif
         ID();
         EX();
         MEM();

@@ -52,3 +52,7 @@ uint64_t MemoryMangerUnit::load_8byte(uint32_t addr, bool use_cache) {
     uint32_t v2 = load_4byte(addr + 4, use_cache);
     return v1 & ((v2 << 30) << 2);
 };
+
+MemoryMangerUnit::MemoryMangerUnit(){}
+
+MemoryMangerUnit::~MemoryMangerUnit(){}

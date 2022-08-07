@@ -84,7 +84,7 @@ class CPU {
     /* data */
    public:
     CPU(MemoryMangerUnit* _mmu, uint64_t _pc, uint64_t stack_point);
-    ~CPU();
+    ~CPU(){};
     MemoryMangerUnit* MMU;
     uint64_t PC;
     uint64_t reg[32] = {0};

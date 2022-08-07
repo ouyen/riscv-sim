@@ -6,3 +6,7 @@ test.cpp
 TODO*
 tmp.txt
 *.riscv
+!.vscode
+.vscode/*
+!.vscode/tasks.json
+a.out
