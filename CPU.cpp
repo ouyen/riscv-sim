@@ -25,7 +25,9 @@ bool CPU::check_lock_ecall() {
 }
 
 uint64_t CPU::extender(uint32_t imm, uint8_t len, bool signext) {
-    if(len>=64){ return imm;}
+    if (len >= 64) {
+        return imm;
+    }
     uint64_t extern_imm;
     uint64_t mask = (1 << len) - 1;       // mask=0b00...1111
     uint64_t sign_mask = 1 << (len - 1);  // sign_mask=0b00...1...000
@@ -137,7 +139,7 @@ void CPU::ID() {
             rs1 = A0;
             rs2 = A7;
             rd = A0;
-            idex_new.Ctrl_WB=WB_ALU;
+            idex_new.Ctrl_WB = WB_ALU;
             break;
         case S:
             imm = ((inst >> 7) & 0x1f) | ((inst >> 20) & 0xfe0);
@@ -262,36 +264,39 @@ void CPU::EX() {
             exmem_new.alu_out =
                 ALU_I_ADDIW(r1, r2, idex_old.funct3, idex_old.funct7);
             break;
-        case I_JALR:
+        case I_JALR: {
             uint64_t new_pc = (r1 + imm) & (~1);
             exmem_new.alu_out = idex_old.pc + 4;
             EX_compare_pc_decide_clear_pipeline(new_pc);
             break;
+        }
         case I_ECALL:
-            exmem_new.alu_out = EX_ecall(r1,r2);
+            exmem_new.alu_out = EX_ecall(r1, r2);
             break;
         case S:
             exmem_new.address = r1 + imm;
             exmem_new.alu_out = r2;
             break;
-        case SB:
+        case SB: {
             uint64_t new_pc = idex_old.pc + imm;
             bool judge = EX_SB_judge(r1, r2, idex_old.funct3);
             if (!judge)
                 new_pc = idex_old.pc + 4;
             EX_compare_pc_decide_clear_pipeline(new_pc);
             break;
+        }
         case U_17:
             exmem_new.alu_out = idex_old.pc + imm;
             break;
         case U_37:
             exmem_new.alu_out = imm;
             break;
-        case UJ:
+        case UJ: {
             exmem_new.alu_out = idex_old.pc + 4;
             uint64_t new_pc = idex_old.pc + imm;
             EX_compare_pc_decide_clear_pipeline(new_pc);
             break;
+        }
         default:
             error("EX ERROR OPCODE %x NOT FOUND\n", idex_old.opcode);
             break;
@@ -316,33 +321,33 @@ void CPU::MEM() {
     // uint8_t write=exmem_old.Ctrl_M_MemWrite;
 
     // memory read
-    if(exmem_old.Ctrl_M_MemRead!=0){
-        switch (exmem_old.Ctrl_M_MemRead-1)
-        {
-        case 0b000:
-            mem_out=(int8_t)MMU->load_byte(addr);
-            break;
-        case 0b100:
-            mem_out=MMU->load_byte(addr);
-            break;
-        case 0b001:
-            mem_out=(int16_t)MMU->load_2byte(addr);
-            break;
-        case 0b101:
-            mem_out=MMU->load_2byte(addr);
-            break;
-        case 0b010:
-            mem_out=(int32_t)MMU->load_4byte(addr);
-            break;
-        case 0b110:
-            mem_out=MMU->load_4byte(addr);
-            break;
-        case 0b011:
-            mem_out=MMU->load_8byte(addr);
-            break;
-        default:
-            error("MEM ERROR READ(0x03), F3: %x NOT FOUND\n",exmem_old.Ctrl_M_MemRead-1);
-            break;
+    if (exmem_old.Ctrl_M_MemRead != 0) {
+        switch (exmem_old.Ctrl_M_MemRead - 1) {
+            case 0b000:
+                mem_out = (int8_t)MMU->load_byte(addr);
+                break;
+            case 0b100:
+                mem_out = MMU->load_byte(addr);
+                break;
+            case 0b001:
+                mem_out = (int16_t)MMU->load_2byte(addr);
+                break;
+            case 0b101:
+                mem_out = MMU->load_2byte(addr);
+                break;
+            case 0b010:
+                mem_out = (int32_t)MMU->load_4byte(addr);
+                break;
+            case 0b110:
+                mem_out = MMU->load_4byte(addr);
+                break;
+            case 0b011:
+                mem_out = MMU->load_8byte(addr);
+                break;
+            default:
+                error("MEM ERROR READ(0x03), F3: %x NOT FOUND\n",
+                      exmem_old.Ctrl_M_MemRead - 1);
+                break;
         }
     }
 
@@ -367,7 +372,8 @@ void CPU::MEM() {
             MMU->stroe_8byte(addr, val);
             break;
         default:
-            error("MEM ERROR WRITE(0x23), F3: %x NOT FOUND\n",exmem_old.Ctrl_M_MemWrite-1);
+            error("MEM ERROR WRITE(0x23), F3: %x NOT FOUND\n",
+                  exmem_old.Ctrl_M_MemWrite - 1);
             break;
     }
 }
@@ -392,13 +398,13 @@ void CPU::WB() {
     return;
 }
 
-
-void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc){
-    uint64_t curr_pc=this->idex_new.pc;
-    if(new_pc==curr_pc) return;
-    else{
-        this->PC=new_pc;
-        idex_new.bubble=true;
-        ifid_new.bubble=true;
+void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
+    uint64_t curr_pc = this->idex_new.pc;
+    if (new_pc == curr_pc)
+        return;
+    else {
+        this->PC = new_pc;
+        idex_new.bubble = true;
+        ifid_new.bubble = true;
     }
 }

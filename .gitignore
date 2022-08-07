@@ -4,3 +4,5 @@ test.cpp
 !.gitignore
 *ipynb
 TODO*
+tmp.txt
+*.riscv
