@@ -59,6 +59,8 @@ enum OPCODE {
 
     I_ECALL = 0x73,
 
+    I_ADDW=0b0111011,
+
     S = 0x23,  // store
     SB = 0x63,
 
@@ -104,8 +106,6 @@ class CPU {
     void MEM();
     void WB();
 
-    void ecall();
-
     bool stop_if_flag = false;
     uint64_t extender(uint32_t imm, uint8_t len, bool signext);
     bool check_lock(REG_NAME r);
@@ -125,14 +125,14 @@ class CPU {
         REG_NAME rs1 = ZERO, rs2 = ZERO;
         uint8_t opcode = 0, funct3 = 0;
         uint8_t funct7 = 0;
-        uint32_t imm = 0;
+        uint64_t imm = 0;
         uint64_t rs1_reg = 0, rs2_reg = 0;
 
         uint64_t pc = 0;
         REG_NAME rd = ZERO;
 
-        bool Ctrl_M_MemWrite = false;
-        bool Ctrl_M_MemRead = false;
+        uint8_t Ctrl_M_MemWrite = 0; //= 1+func3 of load(I,opcode=0x03)
+        uint8_t Ctrl_M_MemRead = 0;  //= 1+func3 of store(S,opcode=0x23)
 
         WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
 
@@ -147,8 +147,8 @@ class CPU {
         uint64_t pc = 0;
         REG_NAME rd = ZERO;
 
-        bool Ctrl_M_MemWrite = false;
-        bool Ctrl_M_MemRead = false;
+        uint8_t Ctrl_M_MemWrite = 0;
+        uint8_t Ctrl_M_MemRead = 0;
 
         WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
 
@@ -167,7 +167,14 @@ class CPU {
     } memwb_new, memwb_old;
 
     void error(const char* fmt, ...);
-    uint64_t ALU_R(uint64_t r1, uint64_t r2, uint16_t func3_func7);
+    uint64_t ALU_R(uint64_t r1, uint64_t r2, uint8_t func3,uint8_t func7);
+    uint64_t ALU_I_ADDI(uint64_t r1,uint64_t imm,uint8_t func3,uint8_t func7);
+    uint64_t ALU_I_ADDIW(uint64_t r1,uint64_t imm,uint8_t func3,uint8_t func7);
+    uint64_t ALU_I_ADDW(uint64_t r1,uint64_t r2,uint8_t func3,uint8_t func7);
+
+    void EX_compare_pc_decide_clear_pipeline(uint64_t new_pc);
+    void EX_ecall();
+    bool EX_SB_judge(int64_t r1,int64_t r2,uint8_t f3);
 };
 
 #endif
