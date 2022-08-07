@@ -498,7 +498,7 @@ void CPU::MEM() {
 
 void CPU::WB() {
     if(print_log){
-        cout << "-------WB-------" << endl;
+        
     }
     if (memwb_old.bubble or memwb_old.rd == ZERO or
         memwb_old.Ctrl_WB == NOT_WRITE) {
@@ -517,6 +517,7 @@ void CPU::WB() {
     }
     this->reg[memwb_old.rd] = val;
     if (print_log) {
+        cout << "-------WB-------" << endl;
         cout << "write to REG " << REG_NAME_CHAR[memwb_old.rd] << endl;
         cout << "val " << val << endl;
     }
