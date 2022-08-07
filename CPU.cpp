@@ -109,7 +109,7 @@ void CPU::ID() {
     idex_new.Ctrl_WB = NOT_WRITE;
 
     switch ((OPCODE)idex_new.opcode) {
-        // deal with imm 
+        // deal with imm
         // set (rs1,rs2,rd) to ZERO if dont use
         //  idex_new.Ctrl_M_MemRead = ?;
         //  idex_new.Ctrl_M_MemWrite = ?;
@@ -119,7 +119,7 @@ void CPU::ID() {
             break;
         case I_LB:
             imm = (inst >> 20);
-            rs2=ZERO;
+            rs2 = ZERO;
             idex_new.Ctrl_M_MemRead = true;
             idex_new.Ctrl_WB = WB_MEM;
             break;
@@ -127,35 +127,35 @@ void CPU::ID() {
         case I_ADDIW:
         case I_JALR:
             imm = (inst >> 20);
-            rs2=ZERO;
-            idex_new.Ctrl_WB=WB_ALU;
+            rs2 = ZERO;
+            idex_new.Ctrl_WB = WB_ALU;
             break;
         case I_ECALL:
-            rs1=A0;
-            rs2=A7;
-            rd=ZERO;
+            rs1 = A0;
+            rs2 = A7;
+            rd = ZERO;
             break;
         case S:
             imm = ((inst >> 7) & 0x1f) | ((inst >> 20) & 0xfe0);
-            rd=ZERO;
-            idex_new.Ctrl_M_MemWrite=true;
+            rd = ZERO;
+            idex_new.Ctrl_M_MemWrite = true;
             break;
         case SB:
             imm = ((inst >> 7) & 0x1e) | ((inst >> 20) & 0x7e0) |
                   (((inst >> 7) & 0x1) << 11) | ((inst >> 31) << 12);
-            rd=ZERO;
+            rd = ZERO;
             break;
         case U_AUIPC:
         case U_LUI:
-            rs1=ZERO;
-            rs2=ZERO;
+            rs1 = ZERO;
+            rs2 = ZERO;
             imm = (inst & 0xfffff000);
             break;
         case UJ:
             imm = ((inst >> 31) << 20) | (((inst >> 21) & 0x100) << 1) |
                   ((inst >> 20) & 0x1) << 11 | (inst >> 12 & 0xff) << 12;
-            rs1=ZERO;
-            rs2=ZERO;
+            rs1 = ZERO;
+            rs2 = ZERO;
             break;
         default:
             error("ID ERROR: opcode %x not found\n", idex_new.opcode);
@@ -173,10 +173,13 @@ void CPU::ID() {
     if (idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
         idex_old.rd != ZERO and
         (idex_old.rd == idex_new.rs1 or idex_old.rd == idex_new.rs2)) {
-        // TODO: pipline stall
+        // pipline stall
         // which means keep fetch (let pc=ifid_old.pc), ex NOP
+        // reset IF:
         this->PC = ifid_old.pc;
+        ifid_new = ifid_old;
         idex_new.bubble = true;
+        ++hazards_by_data_count;
     }
     return;
 }
@@ -192,8 +195,33 @@ void CPU::EX() {
 
     uint64_t r1 = idex_old.rs1_reg;
     uint64_t r2 = idex_old.rs2_reg;
-    // TODO: data hazards flag
+    // data hazards flag
     // 数据前递 data forward
+    // 1.mem冒险
+    if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
+        memwb_old.rd != ZERO) {
+        uint64_t val = memwb_old.mem_out;
+        if (memwb_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_ALU)
+            val = memwb_old.alu_out;
+        if (memwb_old.rd == idex_old.rs1)
+            r1 = val;
+        if (memwb_old.rd == idex_old.rs2)
+            r2 = val;
+    }
+    // 2. ex冒险
+    if (exmem_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE and
+        exmem_old.rd != ZERO) {
+        if (exmem_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
+            (exmem_old.rd == idex_old.rs1 or exmem_old.rd == idex_old.rs2)) {
+            // this should not appear, shoul be bubbled in ID()
+            this->error(
+                "EX ERROR: EX hazards error which should not appear!\n");
+        }
+        if (exmem_old.rd == idex_old.rs1)
+            r1 = exmem_old.alu_out;
+        if (exmem_old.rd == idex_old.rs2)
+            r2 = exmem_old.alu_out;
+    }
 
     switch ((OPCODE)idex_old.opcode) {
         case R:

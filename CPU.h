@@ -93,6 +93,9 @@ class CPU {
     uint64_t cycle_count = 0;
     uint64_t branch_predict();
 
+    uint64_t hazards_by_data_count=0;
+    uint64_t hazards_by_ctrl_count=0;
+
     void run();
 
     void IF();
