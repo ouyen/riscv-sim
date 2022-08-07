@@ -8,12 +8,12 @@ uint64_t CPU::EX_ecall(uint64_t a0, uint64_t a7) {
     switch (a7) {
         case 1:
             // print char
-            printf("%c\n", a0);
+            printf("%c", a0);
             this->exmem_new.rd = ZERO;
             break;
         case 2:
             // print int
-            printf("%d\n", a0);
+            printf("%d", a0);
             this->exmem_new.rd = ZERO;
             break;
         case 3:
