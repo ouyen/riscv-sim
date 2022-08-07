@@ -85,6 +85,10 @@ void CPU::run() {
         single_step=1;
 #endif
 
+#ifdef PRINT_LOG
+print_log=true;
+#endif
+
         ++cycle_count;
         cout << hex;
         if (print_log)
@@ -107,9 +111,7 @@ void CPU::run() {
         MEM();
         if (single_step)
             memwb_old = memwb_new;
-
-        if (print_log)
-            cout << "-------WB-------" << endl;
+            
         WB();
 
         if (print_log) {
@@ -495,6 +497,9 @@ void CPU::MEM() {
 }
 
 void CPU::WB() {
+    if(print_log){
+        cout << "-------WB-------" << endl;
+    }
     if (memwb_old.bubble or memwb_old.rd == ZERO or
         memwb_old.Ctrl_WB == NOT_WRITE) {
         return;
