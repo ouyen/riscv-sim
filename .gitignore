@@ -10,3 +10,5 @@ tmp.txt
 .vscode/*
 !.vscode/tasks.json
 a.out
+t 
+Sim

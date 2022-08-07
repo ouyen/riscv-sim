@@ -43,6 +43,7 @@ enum REG_NAME {
     T6 = 31,
 };
 
+
 enum OPCODE {
     R = 0x33,
 
@@ -111,6 +112,8 @@ class CPU {
     bool check_lock(REG_NAME r);
     bool check_lock_ecall();
     // uint32_t get_imm(uint32_t inst,OPCODE type);
+    bool single_step=false;
+    bool print_log=false;
 
     struct IFID {
         bool bubble = true;
@@ -123,7 +126,8 @@ class CPU {
         bool bubble = true;
 
         REG_NAME rs1 = ZERO, rs2 = ZERO;
-        uint8_t opcode = 0, funct3 = 0;
+        OPCODE opcode;
+        uint8_t funct3 = 0;
         uint8_t funct7 = 0;
         uint64_t imm = 0;
         uint64_t rs1_reg = 0, rs2_reg = 0;

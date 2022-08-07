@@ -12,6 +12,7 @@
                 "${fileDirname}/",
                 "-o",
                 "${fileDirname}/.tmp_build/${fileBasenameNoExtension}",
+                "-DDEBUG",
             ],
             "options": {
                 "cwd": "${fileDirname}"

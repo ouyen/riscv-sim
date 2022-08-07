@@ -64,7 +64,7 @@ uint64_t CPU::ALU_R(uint64_t r1, uint64_t r2, uint8_t func3, uint8_t func7) {
             return r1 & r2;
 
         default:
-            error("EX ERROR: %x not found \n", func3_func7);
+            error("EX ALU_R ERROR: func3_func7: 0x%x not found, PC: %x \n", func3_func7,idex_old.pc);
             return 0;
             break;
     }
@@ -74,11 +74,12 @@ uint64_t CPU::ALU_I_ADDI(uint64_t r1,
                          uint64_t imm,
                          uint8_t func3,
                          uint8_t func7) {
-    uint8_t new_f7;
-    new_f7 = func7 & (~1);
+    uint8_t new_f7=0;
+    // new_f7 = func7 & (~1);
     if (func3 == 0x5 or func3 == 0x1) {
         // special for SLLI, SRAI, SRLI
         imm = imm & (0x3f);  // imm=imm[5:0]
+        new_f7=func7;
     }
     return ALU_R(r1, imm, func3, new_f7);
 }
@@ -109,9 +110,17 @@ bool CPU::EX_SB_judge(int64_t r1, int64_t r2, uint8_t f3) {
         case 0x1:
             return (r1 != r2);
         case 0x4:
+            //blt
             return (r1 < r2);
         case 0x5:
-            return (r1 > r2);
+            //bge
+            return (r1 >= r2);
+        case 0b110:
+            //new BLTU
+            return (uint64_t(r1)<uint64_t(r2));
+        case 0b111:
+            //new BGEU
+            return (uint64_t(r1)>=uint64_t(r2));
         default:
             error("EX_SB_judge ERROR:funct3 : %x not found\n", f3);
             return 0;

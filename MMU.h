@@ -25,7 +25,7 @@ class MemoryMangerUnit {
     void store_4byte(uint32_t addr, uint32_t val, bool use_cache = true);
     uint32_t load_4byte(uint32_t addr, bool use_cache = true);
 
-    void stroe_8byte(uint32_t addr, uint64_t val, bool use_cache = true);
+    void store_8byte(uint32_t addr, uint64_t val, bool use_cache = true);
     uint64_t load_8byte(uint32_t addr, bool use_cache = true);
 
     DRAM dram_memory;

@@ -10,14 +10,15 @@ class DRAM {
    private:
     // 1024*1024*4096
     uint8_t** memory[1024];
+    // uint16_t _i=0,_j=0,_k=0;
 
    public:
     INDEX split_index(uint32_t origin_index);
     DRAM();
     ~DRAM();
-    bool is_address_exit(uint32_t addr);
+    bool is_address_exit(INDEX addr);
 
-    void add_page(uint32_t addr);
+    void add_page(INDEX addr);
 
     void store_byte(uint32_t addr, uint8_t val);
 

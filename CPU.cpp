@@ -2,6 +2,41 @@
 #include <stdarg.h>
 #include <string.h>
 
+string REG_NAME_CHAR[32] = {
+    "zero",  // x0
+    "ra",    // x1
+    "sp",    // x2
+    "gp",    // x3
+    "tp",    // x4
+    "t0",    // x5
+    "t1",    // x6
+    "t2",    // x7
+    "s0",    // x8
+    "s1",    // x9
+    "a0",    // x10
+    "a1",    // x11
+    "a2",    // x12
+    "a3",    // x13
+    "a4",    // x14
+    "a5",    // x15
+    "a6",    // x16
+    "a7",    // x17
+    "s2",    // x18
+    "s3",    // x19
+    "s4",    // x20
+    "s5",    // x21
+    "s6",    // x22
+    "s7",    // x23
+    "s8",    // x24
+    "s9",    // x25
+    "s10",   // x26
+    "s11",   // x27
+    "t3",    // x28
+    "t4",    // x29
+    "t5",    // x30
+    "t6",    // x31
+};
+
 void CPU::error(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -16,17 +51,13 @@ CPU::CPU(MemoryMangerUnit* _mmu, uint64_t _pc, uint64_t stack_point) {
     reg[REG_NAME::SP] = stack_point;
 }
 
-bool CPU::check_lock(REG_NAME r) {
-    return (r != ZERO) and (reg_lock[r] != 0);
-}
-
-bool CPU::check_lock_ecall() {
-    return check_lock(A0) | check_lock(A7);
-}
-
 uint64_t CPU::extender(uint32_t imm, uint8_t len, bool signext) {
     if (len >= 64) {
         return imm;
+    }
+    if (len >= 32) {
+        int64_t tmp = imm;
+        return tmp;
     }
     uint64_t extern_imm;
     uint64_t mask = (1 << len) - 1;       // mask=0b00...1111
@@ -44,18 +75,54 @@ void CPU::run() {
     while (!exit_flag) {
         // if (exit_flag)
         //     return;
-        ++cycle_count;
 
+#ifdef DEBUG
+        single_step = 1;
+        print_log = 1;
+#endif
+        
+#ifdef SINGLE
+        single_step=1;
+#endif
+
+        ++cycle_count;
+        cout << hex;
+        if (print_log)
+            cout << "---------Cycle: 0x" << cycle_count << "---------" << endl;
+        if (PC == 0x101f8) {
+            cout << "" << endl;
+        }
         IF();
-        #ifdef DEBUG
-        cout<<"Cycle: "<<cycle_count<<endl;
-        cout<<"PC: "<<ifid_new.pc<<endl;
-        cout<<"Inst: "<<ifid_new.instruction<<endl;
-        #endif
+        if (single_step)
+            ifid_old = ifid_new;
+
         ID();
+        if (single_step)
+            idex_old = idex_new;
+
         EX();
+        if (single_step)
+            exmem_old = exmem_new;
+
         MEM();
+        if (single_step)
+            memwb_old = memwb_new;
+
+        if (print_log)
+            cout << "-------WB-------" << endl;
         WB();
+
+        if (print_log) {
+            cout << "-------curr REG -------" << endl;
+            cout << dec;
+            for (int i = 0; i < 32; ++i) {
+                cout << "REG " << REG_NAME_CHAR[i] << ": " << (int)reg[i]
+                     << "\t";
+                if ((i + 1) % 5 == 0)
+                    cout << endl;
+            }
+            cout << hex << endl;
+        }
 
         // new --> old
         ifid_old = ifid_new;
@@ -78,10 +145,21 @@ void CPU::IF() {  //取指
         return;
     }
     ifid_new.instruction = MMU->load_4byte(PC);
+    if (ifid_new.instruction == 0) {
+        ifid_new.bubble = true;
+        return;
+    }
     ifid_new.bubble = false;
     ifid_new.pc = PC;
     if (1) {
         PC = PC + 4;
+    }
+    if (print_log) {
+        cout << hex;
+        cout << "-------IF-------" << endl;
+        cout << "PC: 0x" << ifid_new.pc << endl;
+        cout << "Inst: 0x" << ifid_new.instruction << endl;
+        // cout << endl;
     }
 }
 
@@ -95,7 +173,7 @@ void CPU::ID() {
     idex_new.bubble = false;
 
     uint32_t inst = ifid_old.instruction;
-    idex_new.opcode = inst & 0x7f;
+    idex_new.opcode = (OPCODE)(inst & 0x7f);
     inst >>= 7;
     REG_NAME rd = (REG_NAME)((inst & 0x1f));
     inst >>= 5;
@@ -163,13 +241,17 @@ void CPU::ID() {
             rs2 = ZERO;
             imm = (inst & 0xfffff000);
             imm_len = 32;
+            idex_new.Ctrl_WB = WB_WRITE_REG_FROM::WB_ALU;
             break;
         case UJ:
-            imm = ((inst >> 31) << 20) | (((inst >> 21) & 0x100) << 1) |
+            // fix this imm bug
+            imm = ((inst >> 31) << 20) | (((inst >> 21) & 0x3ff) << 1) |
                   ((inst >> 20) & 0x1) << 11 | (inst >> 12 & 0xff) << 12;
+            imm &= (~0x1);
             rs1 = ZERO;
             rs2 = ZERO;
             imm_len = 21;
+            idex_new.Ctrl_WB = WB_WRITE_REG_FROM::WB_ALU;
             break;
         default:
             error("ID ERROR: opcode %x not found\n", idex_new.opcode);
@@ -184,16 +266,30 @@ void CPU::ID() {
     idex_new.rs1_reg = this->reg[rs1];
     idex_new.rs2_reg = this->reg[rs2];
 
-    if (idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
-        idex_old.rd != ZERO and
-        (idex_old.rd == idex_new.rs1 or idex_old.rd == idex_new.rs2)) {
-        // pipline stall
-        // which means keep fetch (let pc=ifid_old.pc), ex NOP
-        // reset IF:
-        this->PC = ifid_old.pc;
-        ifid_new = ifid_old;
-        idex_new.bubble = true;
-        ++hazards_by_data_count;
+    if (print_log) {
+        cout << hex;
+        cout << "-------ID-------" << endl;
+        cout << "OPCODE: 0x" << idex_new.opcode << endl;
+        cout << "func3: 0x" << (uint16_t)idex_new.funct3 << endl;
+        cout << "func7: 0x" << (uint16_t)idex_new.funct7 << endl;
+        cout << "imm: " << dec << (int64_t)idex_new.imm << hex << endl;
+        cout << "rs1 " << REG_NAME_CHAR[rs1] << " rs2 " << REG_NAME_CHAR[rs2]
+             << " rd " << REG_NAME_CHAR[rd] << endl;
+        // cout << endl;
+    }
+
+    if (not single_step) {  // data hazards (1/2)
+        if (idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
+            idex_old.rd != ZERO and
+            (idex_old.rd == idex_new.rs1 or idex_old.rd == idex_new.rs2)) {
+            // pipline stall
+            // which means keep fetch (let pc=ifid_old.pc), ex NOP
+            // reset IF:
+            this->PC = ifid_old.pc;
+            ifid_new = ifid_old;
+            idex_new.bubble = true;
+            ++hazards_by_data_count;
+        }
     }
     return;
 }
@@ -214,32 +310,36 @@ void CPU::EX() {
     uint64_t r1 = idex_old.rs1_reg;
     uint64_t r2 = idex_old.rs2_reg;
     uint64_t imm = idex_old.imm;
-    // data hazards flag
-    // 数据前递 data forward
-    // 1.mem冒险
-    if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
-        memwb_old.rd != ZERO) {
-        uint64_t val = memwb_old.mem_out;
-        if (memwb_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_ALU)
-            val = memwb_old.alu_out;
-        if (memwb_old.rd == idex_old.rs1)
-            r1 = val;
-        if (memwb_old.rd == idex_old.rs2)
-            r2 = val;
-    }
-    // 2. ex冒险
-    if (exmem_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE and
-        exmem_old.rd != ZERO) {
-        if (exmem_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
-            (exmem_old.rd == idex_old.rs1 or exmem_old.rd == idex_old.rs2)) {
-            // this should not appear, shoul be bubbled in ID()
-            this->error(
-                "EX ERROR: EX hazards error which should not appear!\n");
+
+    if (not single_step) {  // data hazards (2/2)
+        // 数据前递 data forward
+        // 1.mem冒险
+        if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
+            memwb_old.rd != ZERO) {
+            uint64_t val = memwb_old.mem_out;
+            if (memwb_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_ALU)
+                val = memwb_old.alu_out;
+            if (memwb_old.rd == idex_old.rs1)
+                r1 = val;
+            if (memwb_old.rd == idex_old.rs2)
+                r2 = val;
         }
-        if (exmem_old.rd == idex_old.rs1)
-            r1 = exmem_old.alu_out;
-        if (exmem_old.rd == idex_old.rs2)
-            r2 = exmem_old.alu_out;
+        // 2. ex冒险
+        if (exmem_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE and
+            exmem_old.rd != ZERO) {
+            if (exmem_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
+                (exmem_old.rd == idex_old.rs1 or
+                 exmem_old.rd == idex_old.rs2)) {
+                // this should not appear, shoul be bubbled in ID()
+                this->error(
+                    "EX ERROR: EX hazards error which should not "
+                    "appear!\n");
+            }
+            if (exmem_old.rd == idex_old.rs1)
+                r1 = exmem_old.alu_out;
+            if (exmem_old.rd == idex_old.rs2)
+                r2 = exmem_old.alu_out;
+        }
     }
 
     // calculate: address
@@ -305,6 +405,11 @@ void CPU::EX() {
         default:
             error("EX ERROR OPCODE %x NOT FOUND\n", idex_old.opcode);
             break;
+    }
+    if (print_log) {
+        cout << "-------EX-------" << endl;
+        cout << "addr: " << exmem_new.address << endl;
+        cout << "alu_out: " << exmem_new.alu_out << endl;
     }
 }
 
@@ -374,12 +479,18 @@ void CPU::MEM() {
             MMU->store_4byte(addr, val);
             break;
         case 3:
-            MMU->stroe_8byte(addr, val);
+            MMU->store_8byte(addr, val);
             break;
         default:
             error("MEM ERROR WRITE(0x23), F3: %x NOT FOUND\n",
                   exmem_old.Ctrl_M_MemWrite - 1);
             break;
+    }
+    if (print_log) {
+        cout << "-------MEM-------" << endl;
+        cout << "memwrite: " << (int)exmem_old.Ctrl_M_MemWrite
+             << " memread: " << (int)exmem_old.Ctrl_M_MemRead << endl
+             << "address: " << exmem_old.address << endl;
     }
 }
 
@@ -400,10 +511,20 @@ void CPU::WB() {
             break;
     }
     this->reg[memwb_old.rd] = val;
+    if (print_log) {
+        cout << "write to REG " << REG_NAME_CHAR[memwb_old.rd] << endl;
+        cout << "val " << val << endl;
+    }
     return;
 }
 
 void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
+    if (single_step) {
+        if (print_log)
+            cout << "from pc 0x" << this->PC << " to 0x" << new_pc << endl;
+        this->PC = new_pc;
+        return;
+    }
     uint64_t curr_pc = this->idex_new.pc;
     if (new_pc == curr_pc)
         return;

@@ -25,7 +25,7 @@ void MemoryMangerUnit::store_2byte(uint32_t addr,
 uint16_t MemoryMangerUnit::load_2byte(uint32_t addr, bool use_cache) {
     uint8_t v1 = load_byte(addr, use_cache);
     uint8_t v2 = load_byte(addr + 1, use_cache);
-    return v1 & (v2 << 8);
+    return v1 | (v2 << 8);
 };
 
 void MemoryMangerUnit::store_4byte(uint32_t addr,
@@ -38,19 +38,19 @@ void MemoryMangerUnit::store_4byte(uint32_t addr,
 uint32_t MemoryMangerUnit::load_4byte(uint32_t addr, bool use_cache) {
     uint16_t v1 = load_2byte(addr, use_cache);
     uint16_t v2 = load_2byte(addr + 2, use_cache);
-    return v1 & (v2 << 16);
+    return v1 | (v2 << 16);
 };
 
-void MemoryMangerUnit::stroe_8byte(uint32_t addr,
+void MemoryMangerUnit::store_8byte(uint32_t addr,
                                    uint64_t val,
                                    bool use_cache) {
     store_4byte(addr, val & 0xffffffff, use_cache);
-    store_4byte(addr, (val >> 16) & 0xffffffff, use_cache);
+    store_4byte(addr+4, ((val >> 30)>>2) & 0xffffffff, use_cache);
 };
 uint64_t MemoryMangerUnit::load_8byte(uint32_t addr, bool use_cache) {
     uint32_t v1 = load_4byte(addr, use_cache);
-    uint32_t v2 = load_4byte(addr + 4, use_cache);
-    return v1 & ((v2 << 30) << 2);
+    uint64_t v2 = load_4byte(addr + 4, use_cache);
+    return v1 | ((v2 << 30) << 2);
 };
 
 MemoryMangerUnit::MemoryMangerUnit(){}
