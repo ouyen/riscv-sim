@@ -173,7 +173,7 @@ class CPU {
     uint64_t ALU_I_ADDW(uint64_t r1,uint64_t r2,uint8_t func3,uint8_t func7);
 
     void EX_compare_pc_decide_clear_pipeline(uint64_t new_pc);
-    void EX_ecall();
+    uint64_t EX_ecall(uint64_t a0,uint64_t a7);
     bool EX_SB_judge(int64_t r1,int64_t r2,uint8_t f3);
 };
 

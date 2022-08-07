@@ -136,7 +136,8 @@ void CPU::ID() {
         case I_ECALL:
             rs1 = A0;
             rs2 = A7;
-            rd = ZERO;
+            rd = A0;
+            idex_new.Ctrl_WB=WB_ALU;
             break;
         case S:
             imm = ((inst >> 7) & 0x1f) | ((inst >> 20) & 0xfe0);
@@ -267,7 +268,7 @@ void CPU::EX() {
             EX_compare_pc_decide_clear_pipeline(new_pc);
             break;
         case I_ECALL:
-            EX_ecall();
+            exmem_new.alu_out = EX_ecall(r1,r2);
             break;
         case S:
             exmem_new.address = r1 + imm;
@@ -389,4 +390,15 @@ void CPU::WB() {
     }
     this->reg[memwb_old.rd] = val;
     return;
+}
+
+
+void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc){
+    uint64_t curr_pc=this->idex_new.pc;
+    if(new_pc==curr_pc) return;
+    else{
+        this->PC=new_pc;
+        idex_new.bubble=true;
+        ifid_new.bubble=true;
+    }
 }
