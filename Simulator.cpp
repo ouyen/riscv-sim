@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     bool step = false;
     bool print_log = false;
     string divid_line =
-        "-----------------------------------------------------------";
+        "\n-----------------------------------------------------------\n";
 
 #ifndef DEBUG
     // cin parameter

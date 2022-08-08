@@ -22,10 +22,10 @@ uint64_t CPU::EX_ecall(uint64_t a0, uint64_t a7) {
             cpu_exit();
             break;
         case 4:
-            scanf("%c", &a0);
+            scanf("%c", &result);
             break;
         case 5:
-            scanf("%d", a0);
+            scanf("%d", &result);
             break;
         default:
             this->error("EX error: ecall a7: %d not found\n", a7);
