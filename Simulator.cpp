@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
          << divid_line << endl;
 #else
     print_log = true;
+    step=true;
     elf_file = "test.riscv";
 #endif
 #ifdef SINGLE

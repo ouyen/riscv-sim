@@ -366,7 +366,7 @@ void CPU::EX() {
     if (print_log) {
         cout << "-------EX-------" << endl;
         cout << "PC: 0x" << idex_old.pc << endl;
-        cout << "r1: 0x" << r1 << "  r2: 0x" << r2 << endl;
+        cout << "r1: 0x" << r1 << "  r2: 0x" << r2 <<" imm: 0x"<<imm<< endl;
 
     }
 
@@ -388,7 +388,7 @@ void CPU::EX() {
         case I_ADDIW:
             // addiw
             exmem_new.alu_out =
-                ALU_I_ADDIW(r1, r2, idex_old.funct3, idex_old.funct7);
+                ALU_I_ADDIW(r1, imm, idex_old.funct3, idex_old.funct7);
             break;
         case I_JALR: {
             uint64_t new_pc = (r1 + imm) & (~1);
