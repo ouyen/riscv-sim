@@ -94,10 +94,12 @@ class CPU {
     uint64_t reg_lock[32] = {0};
     bool exit_flag = false;
     uint64_t cycle_count = 0;
+    uint64_t inst_count=0;
     uint64_t branch_predict();
 
     uint64_t hazards_by_data_count=0;
     uint64_t hazards_by_ctrl_count=0;
+    uint64_t predict_count=0;
 
     void run();
 

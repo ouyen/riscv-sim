@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
          << divid_line << endl;
 #else
     print_log = true;
-    step=true;
+    step = true;
     elf_file = "test.riscv";
 #endif
 #ifdef SINGLE
@@ -67,6 +67,16 @@ int main(int argc, char* argv[]) {
     loadElfToMemory(&reader, &mmu);
     cpu.run();
     cout << divid_line << endl << "[INFO] program exit ." << endl;
+    cout << dec << "Inst count " << cpu.inst_count << endl;
+    cout << "Cycle count " << cpu.cycle_count << endl;
+    cout << "Hazards by data: " << cpu.hazards_by_data_count << endl;
+    cout << "Hazards by ctrl: " << cpu.hazards_by_ctrl_count << endl;
+    cout << "Cycles (" << cpu.cycle_count << ") = 2+ Insts (" << cpu.inst_count
+         << ") + 2*Ctrl_hazard (" << cpu.hazards_by_ctrl_count
+         << ") + Data_hazards (" << cpu.hazards_by_data_count << ")" << endl;
+    cout << "Predict " << cpu.predict_count << " times, failed "
+         << cpu.hazards_by_ctrl_count << " times, success "
+         << cpu.predict_count - cpu.hazards_by_ctrl_count << " times" << endl;
     return 0;
 }
 

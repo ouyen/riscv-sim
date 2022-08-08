@@ -313,6 +313,7 @@ void CPU::EX() {
         }
         return;
     }
+    ++this->inst_count;
     exmem_new.bubble = false;
 
     exmem_new.rd = idex_old.rd;
@@ -564,6 +565,7 @@ void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
         this->PC = new_pc;
         return;
     }
+    ++predict_count;
     uint64_t curr_pc = this->idex_new.pc;
     if (new_pc == curr_pc)
         return;
@@ -571,6 +573,7 @@ void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
         this->PC = new_pc;
         idex_new.bubble = true;
         ifid_new.bubble = true;
+        ++this->hazards_by_ctrl_count;
     }
 }
 
