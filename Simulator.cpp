@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
         elf_file = argv[1];
     if(argc>2){
         string tmp_a="";
-        for(int i=2;i<argc;++i){
+        for(int i=1;i<argc;++i){
             tmp_a=argv[i];
             if(tmp_a=="-s") step=true;
             else{

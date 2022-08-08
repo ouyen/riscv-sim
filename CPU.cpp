@@ -80,9 +80,7 @@ void CPU::run() {
             cout << endl
                  << "#---------Cycle: 0x" << cycle_count << "---------" << endl
                  << endl;
-        if (PC == 0x101f8) {
-            cout << "" << endl;
-        }
+        
         IF();
         if (single_step)
             ifid_old = ifid_new;
@@ -275,13 +273,14 @@ void CPU::ID() {
     }
 
     if (not single_step) {  // data hazards (1/2)
-        if (idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
+        if (idex_old.bubble==false and
+            idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
             idex_old.rd != ZERO and
             (idex_old.rd == idex_new.rs1 or idex_old.rd == idex_new.rs2)) {
             // pipline stall
             // which means keep fetch (let pc=ifid_old.pc), ex NOP
             // reset IF:
-            this->PC = ifid_old.pc;
+            this->PC = ifid_old.pc+4;
             ifid_new = ifid_old;
             idex_new.bubble = true;
             ++hazards_by_data_count;
