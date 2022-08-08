@@ -23,9 +23,11 @@ uint64_t CPU::EX_ecall(uint64_t a0, uint64_t a7) {
             break;
         case 4:
             scanf("%c", &result);
+            getchar();
             break;
         case 5:
             scanf("%d", &result);
+            getchar();
             break;
         default:
             this->error("EX error: ecall a7: %d not found\n", a7);
