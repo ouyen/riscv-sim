@@ -74,11 +74,12 @@ uint64_t CPU::extender(uint32_t imm, uint8_t len, bool signext) {
 
 void CPU::run() {
     while (!exit_flag) {
-
         ++cycle_count;
         cout << hex;
         if (print_log)
-            cout << "---------Cycle: 0x" << cycle_count << "---------" << endl;
+            cout << endl
+                 << "---------Cycle: 0x" << cycle_count << "---------" << endl
+                 << endl;
         if (PC == 0x101f8) {
             cout << "" << endl;
         }
@@ -97,7 +98,7 @@ void CPU::run() {
         MEM();
         if (single_step)
             memwb_old = memwb_new;
-            
+
         WB();
 
         if (print_log) {
@@ -134,7 +135,8 @@ void CPU::IF() {  //取指
     }
     ifid_new.instruction = MMU->load_4byte(PC);
     if (ifid_new.instruction == 0) {
-        ifid_new.bubble = true;
+        // ifid_new.bubble = true;
+        error("IF ERROR, instruction is 0\n");
         return;
     }
     ifid_new.bubble = false;
@@ -152,12 +154,17 @@ void CPU::IF() {  //取指
 }
 
 void CPU::ID() {
+    idex_new.pc = ifid_old.pc;
     if (ifid_old.bubble) {
         idex_new.bubble = true;
+        if (print_log) {
+            cout << hex;
+            cout << "-------ID-------" << endl;
+            cout << "PC: 0x" << ifid_old.pc << endl << "bubble" << endl;
+        }
         return;
     }
 
-    idex_new.pc = ifid_old.pc;
     idex_new.bubble = false;
 
     uint32_t inst = ifid_old.instruction;
@@ -257,6 +264,7 @@ void CPU::ID() {
     if (print_log) {
         cout << hex;
         cout << "-------ID-------" << endl;
+        cout << "PC: 0x" << ifid_old.pc << endl;
         cout << "OPCODE: 0x" << idex_new.opcode << endl;
         cout << "func3: 0x" << (uint16_t)idex_new.funct3 << endl;
         cout << "func7: 0x" << (uint16_t)idex_new.funct7 << endl;
@@ -283,12 +291,19 @@ void CPU::ID() {
 }
 
 void CPU::EX() {
+    exmem_new.pc = idex_old.pc;
+
     if (idex_old.bubble) {
         exmem_new.bubble = true;
+        if (print_log) {
+            cout << hex;
+            cout << "-------EX-------" << endl;
+            cout << "PC: 0x" << idex_old.pc << endl << "bubble" << endl;
+        }
         return;
     }
     exmem_new.bubble = false;
-    exmem_new.pc = idex_old.pc;
+
     exmem_new.rd = idex_old.rd;
 
     exmem_new.Ctrl_M_MemWrite = idex_old.Ctrl_M_MemWrite;
@@ -396,14 +411,22 @@ void CPU::EX() {
     }
     if (print_log) {
         cout << "-------EX-------" << endl;
+        cout << "PC: 0x" << idex_old.pc << endl;
         cout << "addr: " << exmem_new.address << endl;
         cout << "alu_out: " << exmem_new.alu_out << endl;
     }
 }
 
 void CPU::MEM() {
+    memwb_new.pc = exmem_old.pc;
+
     if (exmem_old.bubble) {
         memwb_new.bubble = true;
+        if (print_log) {
+            cout << hex;
+            cout << "-------MEM-------" << endl;
+            cout << "PC: 0x" << exmem_old.pc << endl << "bubble" << endl;
+        }
         return;
     }
     memwb_new.bubble = false;
@@ -476,6 +499,7 @@ void CPU::MEM() {
     }
     if (print_log) {
         cout << "-------MEM-------" << endl;
+        cout << "PC: 0x" << exmem_old.pc << endl;
         cout << "memwrite: " << (int)exmem_old.Ctrl_M_MemWrite
              << " memread: " << (int)exmem_old.Ctrl_M_MemRead << endl
              << "address: " << exmem_old.address << endl;
@@ -483,11 +507,13 @@ void CPU::MEM() {
 }
 
 void CPU::WB() {
-    if(print_log){
-        
-    }
     if (memwb_old.bubble or memwb_old.rd == ZERO or
         memwb_old.Ctrl_WB == NOT_WRITE) {
+        if (print_log) {
+            cout << hex;
+            cout << "-------WB-------" << endl;
+            cout << "PC: 0x" << memwb_old.pc << endl << "bubble" << endl;
+        }
         return;
     }
     uint64_t val = 0;
@@ -504,6 +530,7 @@ void CPU::WB() {
     this->reg[memwb_old.rd] = val;
     if (print_log) {
         cout << "-------WB-------" << endl;
+        cout << "PC: 0x" << memwb_old.pc << endl;
         cout << "write to REG " << REG_NAME_CHAR[memwb_old.rd] << endl;
         cout << "val " << val << endl;
     }
@@ -527,7 +554,6 @@ void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
     }
 }
 
-
-void CPU::cpu_exit(){
-    this->exit_flag=true;
+void CPU::cpu_exit() {
+    this->exit_flag = true;
 }

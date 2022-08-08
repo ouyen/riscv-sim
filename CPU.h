@@ -165,6 +165,7 @@ class CPU {
 
         uint64_t alu_out = 0;
         REG_NAME rd = ZERO;
+        uint64_t pc = 0;
 
         WB_WRITE_REG_FROM Ctrl_WB=NOT_WRITE;
 
