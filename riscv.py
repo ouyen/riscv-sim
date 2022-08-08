@@ -21,14 +21,14 @@ def build(filename):
     os.system(cmd)
 
 def run(filename):
-    if(not os.path.exists(f"{RISCV_PATH}elf/{filename}.riscv")):
+    if(1 or not os.path.exists(f"{RISCV_PATH}elf/{filename}.riscv")):
         build(filename)
     cmd=f"./{simulator} {RISCV_PATH}elf/{filename}.riscv"
     print(cmd)
     os.system(cmd)
 
 def asm(filename):
-    if(not os.path.exists(f"{RISCV_PATH}elf/{filename}.riscv")):
+    if(1 or not os.path.exists(f"{RISCV_PATH}elf/{filename}.riscv")):
         build(filename)
     cmd=f"{OBJDUMP} {RISCV_PATH}elf/{filename}.riscv -D >{RISCV_PATH}asm/{filename}.asm"
     print(cmd)
