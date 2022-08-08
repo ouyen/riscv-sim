@@ -13,39 +13,44 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu);
 bool check_file_exists(string file_path);
 
 int main(int argc, char* argv[]) {
-    bool step=false;
-    bool print_log=false;
+    bool step = false;
+    bool print_log = false;
+    string divid_line =
+        "-----------------------------------------------------------";
 
-    #ifndef DEBUG
+#ifndef DEBUG
     // cin parameter
     if (argc == 2)
         elf_file = argv[1];
-    if(argc>2){
-        string tmp_a="";
-        for(int i=1;i<argc;++i){
-            tmp_a=argv[i];
-            if(tmp_a=="-s") step=true;
-            else{
-                if(tmp_a=="-p") print_log=true;
-                else{
-                    elf_file=tmp_a;
+    if (argc > 2) {
+        string tmp_a = "";
+        for (int i = 1; i < argc; ++i) {
+            tmp_a = argv[i];
+            if (tmp_a == "-s")
+                step = true;
+            else {
+                if (tmp_a == "-p")
+                    print_log = true;
+                else {
+                    elf_file = tmp_a;
                 }
             }
         }
     }
     while (!check_file_exists(elf_file)) {
-        cout << "file " << elf_file << " not exists" << endl;
-        cout << "input riscv elf file path: " << endl;
+        cout << "[INFO] file " << elf_file << " not exists" << endl;
+        cout << "[INFO] input riscv elf file path: " << endl;
         cin >> elf_file;
     }
-    cout << "file " << elf_file << " exists, start simulate" << endl;
-    #else
-    print_log=true;
-    elf_file="test.riscv";
-    #endif
-    #ifdef SINGLE
-    step=true;
-    #endif
+    cout << "[INFO] file " << elf_file << " exists, start simulate" << endl
+         << divid_line << endl;
+#else
+    print_log = true;
+    elf_file = "test.riscv";
+#endif
+#ifdef SINGLE
+    step = true;
+#endif
 
     // prepare hardware
     MemoryMangerUnit mmu;
@@ -55,11 +60,12 @@ int main(int argc, char* argv[]) {
     auto pc = reader.get_entry();
     uint32_t sp = 0x80000000;
     CPU cpu(&mmu, pc, sp);
-    cpu.single_step=step;
-    cpu.print_log=print_log;
+    cpu.single_step = step;
+    cpu.print_log = print_log;
     // std::cout<<std::hex<<reader.get_entry()<<std::endl;
     loadElfToMemory(&reader, &mmu);
     cpu.run();
+    cout << divid_line << endl << "[INFO] program exit ." << endl;
     return 0;
 }
 
