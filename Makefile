@@ -9,4 +9,7 @@ riscv_code_path=riscv-test
 build: $(src)
 	$(GPP) $(src) $(OPTION) -I ./ -o Simulator
 
+clean:
+	rm *.riscv *.yml
+
 

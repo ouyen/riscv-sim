@@ -89,6 +89,8 @@ uint64_t CPU::ALU_I_ADDIW(uint64_t r1,
                           uint8_t func3,
                           uint8_t func7) {
     // ADDIW, SLLIW, SRLIW, SRAIW
+    if(func3==0) func7=0;//apecial for func7
+    else imm=extender(imm,5,true);
     return ALU_I_ADDW(r1, imm, func3, func7);
 }
 
