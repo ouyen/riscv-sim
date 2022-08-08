@@ -18,7 +18,8 @@ uint64_t CPU::EX_ecall(uint64_t a0, uint64_t a7) {
             break;
         case 3:
             // exit()
-            exit(-1);
+            // exit(-1);
+            cpu_exit();
             break;
         case 4:
             scanf("%c", &a0);

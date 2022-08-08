@@ -179,6 +179,8 @@ class CPU {
     void EX_compare_pc_decide_clear_pipeline(uint64_t new_pc);
     uint64_t EX_ecall(uint64_t a0,uint64_t a7);
     bool EX_SB_judge(int64_t r1,int64_t r2,uint8_t f3);
+
+    void cpu_exit();
 };
 
 #endif

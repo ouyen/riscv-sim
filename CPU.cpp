@@ -42,7 +42,8 @@ void CPU::error(const char* fmt, ...) {
     va_start(args, fmt);
     vprintf(fmt, args);
     va_end(args);
-    exit(-1);
+    // exit(-1);
+    cpu_exit();
 }
 
 CPU::CPU(MemoryMangerUnit* _mmu, uint64_t _pc, uint64_t stack_point) {
@@ -73,8 +74,6 @@ uint64_t CPU::extender(uint32_t imm, uint8_t len, bool signext) {
 
 void CPU::run() {
     while (!exit_flag) {
-        // if (exit_flag)
-        //     return;
 
 #ifdef DEBUG
         single_step = 1;
@@ -539,4 +538,9 @@ void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
         idex_new.bubble = true;
         ifid_new.bubble = true;
     }
+}
+
+
+void CPU::cpu_exit(){
+    this->exit_flag=true;
 }
