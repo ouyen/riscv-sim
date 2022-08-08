@@ -17,6 +17,7 @@ uint64_t CPU::EX_ecall(uint64_t a0, uint64_t a7) {
             this->exmem_new.rd = ZERO;
             break;
         case 3:
+        case 93:
             // exit()
             // exit(-1);
             cpu_exit();
