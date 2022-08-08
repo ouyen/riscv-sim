@@ -11,7 +11,7 @@
                 "-I",
                 "${fileDirname}/",
                 "-o",
-                "${fileDirname}/.tmp_build/${fileBasenameNoExtension}",
+                "${fileDirname}/.tmp_build/Simulator",
                 "-DDEBUG",
             ],
             "options": {

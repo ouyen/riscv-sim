@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
     cout << "file " << elf_file << " exists, start simulate" << endl;
     #else
     print_log=true;
+    elf_file="test.riscv";
     #endif
     #ifdef SINGLE
     step=true;
