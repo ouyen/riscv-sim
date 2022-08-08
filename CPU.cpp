@@ -78,7 +78,7 @@ void CPU::run() {
         cout << hex;
         if (print_log)
             cout << endl
-                 << "---------Cycle: 0x" << cycle_count << "---------" << endl
+                 << "#---------Cycle: 0x" << cycle_count << "---------" << endl
                  << endl;
         if (PC == 0x101f8) {
             cout << "" << endl;
@@ -286,6 +286,17 @@ void CPU::ID() {
             idex_new.bubble = true;
             ++hazards_by_data_count;
         }
+        // wb此时还没有写回, 手动写回
+        if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
+            memwb_old.rd != ZERO) {
+            uint64_t val = memwb_old.mem_out;
+            if (memwb_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_ALU)
+                val = memwb_old.alu_out;
+            if (memwb_old.rd == idex_new.rs1)
+                idex_new.rs1_reg = val;
+            if (memwb_old.rd == idex_new.rs2)
+                idex_new.rs2_reg = val;
+        }
     }
     return;
 }
@@ -316,7 +327,7 @@ void CPU::EX() {
 
     if (not single_step) {  // data hazards (2/2)
         // 数据前递 data forward
-        // 1.mem冒险
+        // 1.wb冒险
         if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
             memwb_old.rd != ZERO) {
             uint64_t val = memwb_old.mem_out;
@@ -352,7 +363,14 @@ void CPU::EX() {
     exmem_new.address = 0;
     exmem_new.alu_out = 0;
 
-    switch ((OPCODE)idex_old.opcode) {
+    if (print_log) {
+        cout << "-------EX-------" << endl;
+        cout << "PC: 0x" << idex_old.pc << endl;
+        cout << "r1: 0x" << r1 << "  r2: 0x" << r2 << endl;
+
+    }
+
+    switch ((OPCODE)idex_old.opcode) {  // ex
         case R:
             exmem_new.alu_out = ALU_R(r1, r2, idex_old.funct3, idex_old.funct7);
             break;
@@ -409,9 +427,11 @@ void CPU::EX() {
             error("EX ERROR OPCODE %x NOT FOUND\n", idex_old.opcode);
             break;
     }
+
     if (print_log) {
-        cout << "-------EX-------" << endl;
-        cout << "PC: 0x" << idex_old.pc << endl;
+        // cout << "-------EX-------" << endl;
+        // cout << "PC: 0x" << idex_old.pc << endl;
+        // cout<<"r1: 0x"<<r1<<"  r2: 0x"<<r2<<endl;
         cout << "addr: " << exmem_new.address << endl;
         cout << "alu_out: " << exmem_new.alu_out << endl;
     }

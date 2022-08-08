@@ -106,8 +106,10 @@ uint64_t CPU::ALU_I_ADDW(uint64_t r1,
 bool CPU::EX_SB_judge(int64_t r1, int64_t r2, uint8_t f3) {
     switch (f3) {
         case 0x0:
+            //beq
             return (r1 == r2);
         case 0x1:
+            //bne
             return (r1 != r2);
         case 0x4:
             //blt
