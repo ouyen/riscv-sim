@@ -75,19 +75,6 @@ uint64_t CPU::extender(uint32_t imm, uint8_t len, bool signext) {
 void CPU::run() {
     while (!exit_flag) {
 
-#ifdef DEBUG
-        single_step = 1;
-        print_log = 1;
-#endif
-        
-#ifdef SINGLE
-        single_step=1;
-#endif
-
-#ifdef PRINT_LOG
-print_log=true;
-#endif
-
         ++cycle_count;
         cout << hex;
         if (print_log)

@@ -1,31 +1,69 @@
 #include "CPU.h"
 #include "MMU.h"
 
+#include <unistd.h>
 #include <elfio/elfio.hpp>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
-// int tmp_pc=0;
-
-// string elf_file = "add.riscv";
-string elf_file="hi.riscv";
+string elf_file = "hi.riscv";
 void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu);
+bool check_file_exists(string file_path);
 
-int main() {
+int main(int argc, char* argv[]) {
+    bool step=false;
+    bool print_log=false;
+
+    #ifndef DEBUG
+    // cin parameter
+    if (argc == 2)
+        elf_file = argv[1];
+    if(argc>2){
+        string tmp_a="";
+        for(int i=2;i<argc;++i){
+            tmp_a=argv[i];
+            if(tmp_a=="-s") step=true;
+            else{
+                if(tmp_a=="-p") print_log=true;
+                else{
+                    elf_file=tmp_a;
+                }
+            }
+        }
+    }
+    while (!check_file_exists(elf_file)) {
+        cout << "file " << elf_file << " not exists" << endl;
+        cout << "input riscv elf file path: " << endl;
+        cin >> elf_file;
+    }
+    cout << "file " << elf_file << " exists, start simulate" << endl;
+    #else
+    print_log=true;
+    #endif
+    #ifdef SINGLE
+    step=true;
+    #endif
+
     // prepare hardware
     MemoryMangerUnit mmu;
     // load elf
     ELFIO::elfio reader;
     reader.load(elf_file);
     auto pc = reader.get_entry();
-    // tmp_pc=pc;
     uint32_t sp = 0x80000000;
     CPU cpu(&mmu, pc, sp);
+    cpu.single_step=step;
+    cpu.print_log=print_log;
     // std::cout<<std::hex<<reader.get_entry()<<std::endl;
     loadElfToMemory(&reader, &mmu);
     cpu.run();
     return 0;
+}
+
+bool check_file_exists(string file_path) {
+    return (access(file_path.c_str(), F_OK) != -1);
 }
 
 void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu) {
@@ -47,55 +85,11 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu) {
         uint32_t memsz = pseg->get_memory_size();
         uint32_t addr = (uint32_t)pseg->get_virtual_address();
         for (uint32_t p = addr; p < addr + memsz; ++p) {
-            //   std::cout<<p<<' '<<std::hex<<pseg->get_data()[p -
-            //   addr]+(uint)0<<std::endl;
-            // if (!memory->isPageExist(p)) {
-            //   memory->addPage(p);
-            // }
-            // if(p==tmp_pc){
-            //     cout<<"!!!"<<endl;
-            // }
             if (p < addr + filesz) {
                 mmu->store_byte(p, pseg->get_data()[p - addr], false);
             } else {
                 mmu->store_byte(p, 0, false);
-                // memory->setByteNoCache(p, 0);
             }
         }
     }
 }
-
-
-
-// int main(){
-//     MemoryMangerUnit mmu;
-//     // mmu.store_8byte(65840,0x1234567887654321);
-//     // cout<<mmu.load_8byte(65840)<<endl;
-//     uint32_t addr=65840;
-//     mmu.store_8byte(100,0x1234567887654321);
-//     int x1=mmu.load_byte(100);
-//     int x2=mmu.load_byte(101);
-//     auto x=mmu.load_8byte(100);
-//     // cout<<x<<endl;
-//     printf("%llx\n",x);
-// }
-
-// int main() {
-//     // prepare hardware
-//     MemoryMangerUnit mmu;
-//     // load elf
-//     // ELFIO::elfio reader;
-//     // reader.load(elf_file);
-//     auto pc = 0;
-//     // tmp_pc=pc;
-//     uint32_t sp = 0x80000000;
-//     CPU cpu(&mmu, pc, sp);
-//     // std::cout<<std::hex<<reader.get_entry()<<std::endl;
-//     // loadElfToMemory(&reader, &mmu);
-//     mmu.store_4byte(0,0x00500513);
-    
-//     mmu.store_4byte(4,0x00200893);
-//     mmu.store_4byte(8,0x00000073);
-//     cpu.run();
-//     return 0;
-// }
