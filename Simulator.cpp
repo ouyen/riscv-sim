@@ -69,6 +69,7 @@ int main(int argc, char* argv[]) {
     cout << divid_line << endl << "[INFO] program exit ." << endl;
     cout << dec << "Inst count " << cpu.inst_count << endl;
     cout << "Cycle count " << cpu.cycle_count << endl;
+    cout<< "CPI: "<<(double)cpu.cycle_count/cpu.inst_count <<endl;
     cout << "Hazards by data: " << cpu.hazards_by_data_count << endl;
     cout << "Hazards by ctrl: " << cpu.hazards_by_ctrl_count << endl;
     cout << "Cycles (" << cpu.cycle_count << ") = 2+ Insts (" << cpu.inst_count
