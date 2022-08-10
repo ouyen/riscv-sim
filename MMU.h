@@ -2,7 +2,7 @@
 #define _MMU_H
 
 #include <iostream>
-#include "DRAM.h"
+#include "Memory_Unit.h"
 
 using namespace std;
 
@@ -14,20 +14,28 @@ typedef uint8_t MemoryFrom;
 
 class MemoryMangerUnit {
    public:
-    MemoryMangerUnit();
+    MemoryMangerUnit(Basic_Memory_Unit* _top,Basic_Memory_Unit* _bottom);
     ~MemoryMangerUnit();
-    void store_byte(uint32_t addr, uint8_t val, bool use_cache = true);
-    uint8_t load_byte(uint32_t addr, bool use_cache = true);
+    void store_byte(uint32_t addr, uint8_t val, bool use_cache = true,bool count_latency=true);
+    uint8_t load_byte(uint32_t addr, bool use_cache = true,bool count_latency=true);
 
-    void store_2byte(uint32_t addr, uint16_t val, bool use_cache = true);
-    uint16_t load_2byte(uint32_t addr, bool use_cache = true);
+    void store_2byte(uint32_t addr, uint16_t val, bool use_cache = true,bool count_latency=true);
+    uint16_t load_2byte(uint32_t addr, bool use_cache = true,bool count_latency=true);
 
-    void store_4byte(uint32_t addr, uint32_t val, bool use_cache = true);
-    uint32_t load_4byte(uint32_t addr, bool use_cache = true);
+    void store_4byte(uint32_t addr, uint32_t val, bool use_cache = true,bool count_latency=true);
+    uint32_t load_4byte(uint32_t addr, bool use_cache = true,bool count_latency=true);
 
-    void store_8byte(uint32_t addr, uint64_t val, bool use_cache = true);
-    uint64_t load_8byte(uint32_t addr, bool use_cache = true);
+    void store_8byte(uint32_t addr, uint64_t val, bool use_cache = true,bool count_latency=true);
+    uint64_t load_8byte(uint32_t addr, bool use_cache = true,bool count_latency=true);
 
-    DRAM dram_memory;
+    uint64_t total_latency_count=0;
+    Basic_Memory_Unit* top_memory=nullptr;
+
+    Basic_Memory_Unit* bottom_memory=nullptr;
+
+    Basic_Memory_Unit* top_and_bottom[2];
+
+    // DRAM dram_memory;
 };
+
 #endif

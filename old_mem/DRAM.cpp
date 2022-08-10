@@ -1,4 +1,4 @@
-#include "Memory_Unit.h"
+#include "DRAM.h"
 #include <string.h>
 #include <cstdio>
 #include <iostream>
@@ -15,8 +15,7 @@ INDEX DRAM::split_index(uint32_t origin_index) {
     //         origin_index & 0xfff};
     return {_i,_j,_k};
 }
-DRAM::DRAM(StorageLatency _leng) {
-    this->latency=_leng;
+DRAM::DRAM() {
     for (uint16_t i = 0; i < 1024; ++i) {
         memory[i] = nullptr;
     }
@@ -56,15 +55,13 @@ void DRAM::add_page(INDEX I) {
 
 
 
-void DRAM::store_byte(uint32_t addr, uint8_t val, uint8_t& add_latency) {
-    add_latency+=(this->latency.hit_latency+this->latency.bus_latency);
+void DRAM::store_byte(uint32_t addr, uint8_t val) {
     INDEX I = split_index(addr);
     add_page(I);
     memory[get<0>(I)][get<1>(I)][get<2>(I)] = val;
 }
 
-uint8_t DRAM::load_byte(uint32_t addr, uint8_t& add_latency) {
-    add_latency+=(this->latency.hit_latency+this->latency.bus_latency);
+uint8_t DRAM::load_byte(uint32_t addr) {
     INDEX I = split_index(addr);
     if (is_address_exit(I)) {
         return memory[get<0>(I)][get<1>(I)][get<2>(I)];

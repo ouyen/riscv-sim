@@ -57,14 +57,14 @@ void DRAM::add_page(INDEX I) {
 
 
 void DRAM::store_byte(uint32_t addr, uint8_t val, uint8_t& add_latency) {
-    add_latency+=this->latency.hit_latency;
+    add_latency+=(this->latency.hit_latency+this->latency.bus_latency);
     INDEX I = split_index(addr);
     add_page(I);
     memory[get<0>(I)][get<1>(I)][get<2>(I)] = val;
 }
 
 uint8_t DRAM::load_byte(uint32_t addr, uint8_t& add_latency) {
-    add_latency+=this->latency.hit_latency;
+    add_latency+=(this->latency.hit_latency+this->latency.bus_latency);
     INDEX I = split_index(addr);
     if (is_address_exit(I)) {
         return memory[get<0>(I)][get<1>(I)][get<2>(I)];

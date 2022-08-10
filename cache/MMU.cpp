@@ -58,6 +58,11 @@ uint64_t MemoryMangerUnit::load_8byte(uint32_t addr, bool use_cache,bool count_l
     return v1 | ((v2 << 30) << 2);
 };
 
-MemoryMangerUnit::MemoryMangerUnit(){}
+MemoryMangerUnit::MemoryMangerUnit(Basic_Memory_Unit* _top,Basic_Memory_Unit* _bottom){
+    top_memory=_top;
+    bottom_memory=_bottom;
+    top_and_bottom[1]=_top;
+    top_and_bottom[0]=_bottom;
+}
 
 MemoryMangerUnit::~MemoryMangerUnit(){}

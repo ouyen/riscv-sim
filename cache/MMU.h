@@ -14,7 +14,7 @@ typedef uint8_t MemoryFrom;
 
 class MemoryMangerUnit {
    public:
-    MemoryMangerUnit();
+    MemoryMangerUnit(Basic_Memory_Unit* _top,Basic_Memory_Unit* _bottom);
     ~MemoryMangerUnit();
     void store_byte(uint32_t addr, uint8_t val, bool use_cache = true,bool count_atency=true);
     uint8_t load_byte(uint32_t addr, bool use_cache = true,bool count_atency=true);
@@ -37,4 +37,5 @@ class MemoryMangerUnit {
 
     // DRAM dram_memory;
 };
+
 #endif

@@ -41,7 +41,7 @@ uint8_t Cache::get_data_addr(const uint32_t& origin_addr) {
     return origin_addr & 0x3f;
 }
 
-uint8_t Cache::add_cache_page(const uint32_t& cache_addr, uint32_t label) {
+int8_t Cache::add_cache_page(const uint32_t& cache_addr, uint32_t label) {
     // auto cache_addr=get_cache_addr(origin_addr);
     // auto label=get_cache_label(origin_addr);
     if (!p_data[cache_addr]) {
@@ -66,7 +66,7 @@ uint8_t Cache::add_cache_page(const uint32_t& cache_addr, uint32_t label) {
     }
 }
 
-int Cache::cache_hit(const uint32_t& cache_addr, const uint8_t& label) {
+int Cache::cache_hit(const uint32_t& cache_addr, const uint32_t& label) {
     if (!p_data[cache_addr])
         return -1;
     else {
@@ -122,7 +122,7 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
 
         else {  // write allocate
             label_address = add_cache_page(cache_addr, label);
-            if (p_data[cache_addr][label_address].null == false) {
+            if (p_data[cache_addr][label_address].null == false and p_data[cache_addr][label_address].label!=label) {
                 // replace
                 if (config.write_through == false or
                     config.write_allocate == true) {
@@ -161,7 +161,8 @@ uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency) {
         auto val = this->lower_memory->load_byte(addr, _latency);
         uint8_t tmp = 0;
         label_address = add_cache_page(cache_addr, label);
-        write_back(cache_addr, label_address);
+        if(p_data[cache_addr][label_address].null==false)
+            write_back(cache_addr, label_address);
         p_data[cache_addr][label_address].label = false;
         for (int i = 0; i < 64; ++i) {
             p_data[cache_addr][label_address].data[i] =
@@ -172,6 +173,9 @@ uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency) {
 }
 
 void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
+    if(config.write_through==true and config.write_allocate==false) return;
+    if( p_data[cache_addr][label_addr].null==true) return;
+
     if (config.write_through == false or config.write_allocate == true) {
         uint8_t tmp = 0;
         uint32_t label = p_data[cache_addr][label_addr].label;

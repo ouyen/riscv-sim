@@ -132,7 +132,8 @@ void CPU::IF() {  //取指
         ifid_new = ifid_old;
         return;
     }
-    ifid_new.instruction = MMU->load_4byte(PC);
+
+    ifid_new.instruction = MMU->load_4byte(PC,true,true);
     if (ifid_new.instruction == 0) {
         // ifid_new.bubble = true;
         error("IF ERROR, instruction is 0\n");
@@ -440,6 +441,7 @@ void CPU::EX() {
 
 void CPU::MEM() {
     memwb_new.pc = exmem_old.pc;
+
 
     if (exmem_old.bubble) {
         memwb_new.bubble = true;

@@ -47,14 +47,34 @@ int main(int argc, char* argv[]) {
 #else
     print_log = true;
     step = true;
-    elf_file = "test.riscv";
+    elf_file = "riscv-test/elf/helloword.riscv";
 #endif
 #ifdef SINGLE
     step = true;
 #endif
 
     // prepare hardware
-    MemoryMangerUnit mmu;
+    StorageLatency ml;
+    ml.bus_latency = 0;
+    ml.hit_latency = 100;
+    //   m.SetLatency(ml);
+
+    StorageLatency ll;
+    ll.bus_latency = 0;
+    ll.hit_latency = 0;
+    // MemoryMangerUnit MMU;
+    DRAM dram_mem(ml);
+
+    CacheConfig cfg;
+    cfg.size=(5+10);//32KB
+    cfg.associativity=3;//2**3=8
+    // cfg.set_num
+    cfg.write_through=0;
+    cfg.write_allocate=1;
+
+    Cache L1(ll,cfg,&dram_mem);
+    MemoryMangerUnit mmu(&L1,&dram_mem);
+
     // load elf
     ELFIO::elfio reader;
     reader.load(elf_file);
@@ -78,6 +98,7 @@ int main(int argc, char* argv[]) {
     cout << "Predict " << cpu.predict_count << " times, failed "
          << cpu.hazards_by_ctrl_count << " times, success "
          << cpu.predict_count - cpu.hazards_by_ctrl_count << " times" << endl;
+    cout<<mmu.total_latency_count<<" "<<L1.miss_count<<' '<<L1.hit_count<<endl;
     return 0;
 }
 
@@ -105,9 +126,9 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu) {
         uint32_t addr = (uint32_t)pseg->get_virtual_address();
         for (uint32_t p = addr; p < addr + memsz; ++p) {
             if (p < addr + filesz) {
-                mmu->store_byte(p, pseg->get_data()[p - addr], false);
+                mmu->store_byte(p, pseg->get_data()[p - addr], true,false);
             } else {
-                mmu->store_byte(p, 0, false);
+                mmu->store_byte(p, 0, true,false);
             }
         }
     }

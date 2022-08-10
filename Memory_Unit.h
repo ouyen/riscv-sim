@@ -86,12 +86,12 @@ class Cache : public Basic_Memory_Unit {
     int ReplaceDecision();
     uint8_t ReplaceAlgorithm();
 
-    uint8_t add_cache_page(const uint32_t& cache_addr,
+    int8_t add_cache_page(const uint32_t& cache_addr,
                            uint32_t label);  // return label_address
 
     int cache_hit(
         const uint32_t& cache_addr,
-        const uint8_t& label_addr);  // return label_address, -1 means none
+        const uint32_t& label_addr);  // return label_address, -1 means none
 
     int cache_hit(const uint32_t& origin_addr);
 
