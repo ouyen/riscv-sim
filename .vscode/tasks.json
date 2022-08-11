@@ -7,11 +7,12 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${fileDirname}/*.cpp",
+                // "${fileDirname}/*.cpp",
+                "DRAM.cpp","MMU.cpp","Cache.cpp","test_cache.cpp",
                 "-I",
                 "${fileDirname}/",
                 "-o",
-                "${fileDirname}/.tmp_build/Simulator",
+                "${fileDirname}/.tmp_build/Debug",
                 "-DDEBUG",
             ],
             "options": {
@@ -25,7 +26,7 @@
                 "isDefault": true
             },
             "detail": "调试器生成的任务。"
-        }
+        },
     ],
     "version": "2.0.0"
 }

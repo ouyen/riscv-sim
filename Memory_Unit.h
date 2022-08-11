@@ -9,13 +9,11 @@ using namespace std;
 typedef tuple<uint16_t, uint16_t, uint16_t> INDEX;
 
 typedef struct StorageLatency {
-    int hit_latency = 0;  // In nanoseconds
-    int bus_latency = 0;  // Added to each request
+    int hit_latency = 0; 
+    int bus_latency = 0;  
 } StorageLatency;
 
-// typedef struct LINE {
-//     uint8_t data[64] = {0};
-// } LINE;
+
 
 class Basic_Memory_Unit {
    private:
@@ -45,9 +43,9 @@ class DRAM : public Basic_Memory_Unit {
 };
 
 typedef struct CacheConfig {
-    int size;
-    int associativity;
-    // int set_num;         // Number of cache sets
+    int size=15;//2**15=32K;
+    int associativity=3;//2**3=8
+    int blcok_size=6;//2**6=64    
     int write_through;   // 0|1 for back|through
     int write_allocate;  // 0|1 for no-alc|alc
 } CacheConfig;
@@ -55,7 +53,7 @@ typedef struct CacheConfig {
 typedef struct Cache_Line {
     bool null = true;
     uint32_t label = 0;
-    uint8_t data[64] = {0};
+    uint8_t data[1024] = {0};
 } Cache_Line;
 
 class Cache : public Basic_Memory_Unit {
@@ -75,10 +73,11 @@ class Cache : public Basic_Memory_Unit {
     uint64_t hit_count = 0;
     uint64_t miss_count = 0;
     uint32_t max_addr = 0;
+    uint32_t max_data=0;
 
     uint32_t get_cache_addr(const uint32_t& origin_addr);
     uint32_t get_cache_label(const uint32_t& origin_addr);
-    uint8_t get_data_addr(const uint32_t& origin_addr);
+    uint32_t get_data_addr(const uint32_t& origin_addr);
 
     void store_byte(uint32_t addr, uint8_t val, uint8_t& latency);
     uint8_t load_byte(uint32_t addr, uint8_t& latency);

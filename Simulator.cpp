@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     CacheConfig cfg;
     cfg.size=(5+10);//32KB
     cfg.associativity=3;//2**3=8
-    // cfg.set_num
+    cfg.blcok_size=6;//2**6=64
     cfg.write_through=0;
     cfg.write_allocate=1;
 

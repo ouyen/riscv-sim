@@ -6,12 +6,14 @@ Cache::Cache(StorageLatency _latency,
              Basic_Memory_Unit* _lower) {
     latency = _latency;
     this->config = _cacheconfig;
+    if(config.blcok_size>10) config.blcok_size=10;
     this->lower_memory = _lower;
-    max_addr = (1 << (config.size - config.associativity - 6)) - 1;
+    max_addr = (1 << (config.size - config.associativity - config.blcok_size)) - 1;
     max_associativity = (1 << config.associativity) - 1;
     hit_count = 0;
     miss_count = 0;
-    p_data = new Cache_Line*[max_addr + 1];
+    max_data=(1<<config.blcok_size)-1;
+    p_data = new Cache_Line*[max_addr + 1]();
 }
 
 Cache::~Cache() {
@@ -19,7 +21,7 @@ Cache::~Cache() {
     if (p_data == nullptr)
         return;
     for (i = 0; i <= max_addr; ++i) {
-        if (p_data[i]) {
+        if (p_data[i]!=nullptr) {
             delete[] p_data[i];
             p_data[i] = nullptr;
         }
@@ -29,7 +31,7 @@ Cache::~Cache() {
 }
 
 uint32_t Cache::get_cache_addr(const uint32_t& o_addr) {
-    return (o_addr >> 6) & max_addr;
+    return (o_addr >> config.blcok_size) & max_addr;
 }
 
 uint32_t Cache::get_cache_label(const uint32_t& origin_addr) {
@@ -37,8 +39,8 @@ uint32_t Cache::get_cache_label(const uint32_t& origin_addr) {
     // =o_addr>>(6+cache_addr_len)
 }
 
-uint8_t Cache::get_data_addr(const uint32_t& origin_addr) {
-    return origin_addr & 0x3f;
+uint32_t Cache::get_data_addr(const uint32_t& origin_addr) {
+    return origin_addr & max_data;
 }
 
 int8_t Cache::add_cache_page(const uint32_t& cache_addr, uint32_t label) {
@@ -134,11 +136,11 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
                 p_data[cache_addr][label_address].null = false;
                 p_data[cache_addr][label_address].label = label;
                 p_data[cache_addr][label_address].data[0] =
-                    this->lower_memory->load_byte(addr & (~0x3f), _latency);
+                    this->lower_memory->load_byte(addr & (~max_data), _latency);
                 uint8_t tmp = 0;
-                for (int i = 1; i < 64; ++i) {
+                for (int i = 1; i < max_data+1; ++i) {
                     p_data[cache_addr][label_address].data[i] =
-                        this->lower_memory->load_byte(addr & (~0x3f) + i, tmp);
+                        this->lower_memory->load_byte(addr & (~max_data) + i, tmp);
                 }
                 p_data[cache_addr][label_address].data[data_addr] = val;
             }
@@ -163,10 +165,11 @@ uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency) {
         label_address = add_cache_page(cache_addr, label);
         if(p_data[cache_addr][label_address].null==false)
             write_back(cache_addr, label_address);
-        p_data[cache_addr][label_address].label = false;
-        for (int i = 0; i < 64; ++i) {
+        p_data[cache_addr][label_address].null = false;
+        p_data[cache_addr][label_address].label = label;
+        for (int i = 0; i < max_data+1; ++i) {
             p_data[cache_addr][label_address].data[i] =
-                this->lower_memory->load_byte(addr & (~0x3f) + i, tmp);
+                this->lower_memory->load_byte(addr & (~max_data) + i, tmp);
         }
         return val;
     }
@@ -179,9 +182,9 @@ void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
     if (config.write_through == false or config.write_allocate == true) {
         uint8_t tmp = 0;
         uint32_t label = p_data[cache_addr][label_addr].label;
-        uint32_t lower_addr = (get_origin_addr(cache_addr, label) & (~0x3f));
+        uint32_t lower_addr = (get_origin_addr(cache_addr, label) & (~max_data));
         // this->lower_memory->store_byte(lower_addr,p_data[cache_addr][label_addr].data[0],_latency);
-        for (int i = 0; i < 64; ++i) {
+        for (int i = 0; i < max_data+1; ++i) {
             this->lower_memory->store_byte(
                 lower_addr + i, p_data[cache_addr][label_addr].data[i], tmp);
         }
@@ -191,11 +194,11 @@ void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
 
 uint32_t Cache::get_origin_addr(const uint32_t& cache_addr,
                                 const uint32_t& label) {
-    return (cache_addr << 6) | (label << (config.size - config.associativity));
+    return (cache_addr << max_addr) | (label << (config.size - config.associativity));
 }
 
 uint8_t Cache::ReplaceAlgorithm() {
     default_random_engine e;
-    uniform_int_distribution<unsigned> u(0, 63);
+    uniform_int_distribution<unsigned> u(0, this->max_associativity);
     return u(e);
 }
