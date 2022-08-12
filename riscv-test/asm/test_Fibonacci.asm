@@ -211,7 +211,7 @@ Disassembly of section .text:
    103b4:	00113423          	sd	ra,8(sp)
    103b8:	00813023          	sd	s0,0(sp)
    103bc:	01010413          	addi	s0,sp,16
-   103c0:	00300513          	li	a0,3
+   103c0:	00f00513          	li	a0,15
    103c4:	f65ff0ef          	jal	ra,10328 <Fibonacci>
    103c8:	00050793          	mv	a5,a0
    103cc:	00078513          	mv	a0,a5

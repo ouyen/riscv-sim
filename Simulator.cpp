@@ -8,9 +8,10 @@
 
 using namespace std;
 
-string elf_file = "hi.riscv";
+string elf_file = "";
 void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu);
 bool check_file_exists(string file_path);
+void print_help();
 
 int main(int argc, char* argv[]) {
     bool single = false;
@@ -21,9 +22,9 @@ int main(int argc, char* argv[]) {
 
 #ifndef DEBUG
     // cin parameter
-    if (argc == 2)
-        elf_file = argv[1];
-    if (argc > 2) {
+    // if (argc == 2)
+    //     elf_file = argv[1];
+    if (argc >= 2) {
         string tmp_a = "";
         for (int i = 1; i < argc; ++i) {
             tmp_a = argv[i];
@@ -33,6 +34,10 @@ int main(int argc, char* argv[]) {
                 Step_run = true;
             else if (tmp_a == "-p")
                 print_log = true;
+            else if (tmp_a == "-h") {
+                print_help();
+                return 0;
+            } 
             else {
                 elf_file = tmp_a;
             }
@@ -159,4 +164,14 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu) {
             }
         }
     }
+}
+
+
+void print_help(){
+    cout<<R"(./Simulator riscv-elf-file-name [-s] [-p] [-S] [-h]
+Options: 
+		[-s] : single_cycle
+		[-p] : print_log
+        [-S] : single step
+		[-h] : help)"<<endl;
 }

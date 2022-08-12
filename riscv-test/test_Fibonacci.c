@@ -6,6 +6,6 @@ int Fibonacci(int n){
 }
 
 int main(){
-    print_num(Fibonacci(8));
+    print_num(Fibonacci(15));
     exit_proc();
 }
