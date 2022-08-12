@@ -16,3 +16,4 @@ Simp
 *.yml
 Simulator_nocache
 Cache_test
+!cache_test_result/draw.ipynb
