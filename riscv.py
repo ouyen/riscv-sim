@@ -5,7 +5,7 @@ import sys
 import os
 
 RISCV_GCC="$HOME/riscv64i/bin/riscv64-unknown-elf-gcc -march=rv64i"
-RISCV_LIB="riscv-test/lib.h riscv-test/lib.c"
+RISCV_LIB="riscv-test/lib.h"
 RISCV_PATH="riscv-test/"
 simulator="Simulator"
 #  ~/riscv64i/bin/riscv64-unknown-elf-objdump riscv-test/elf/helloword.riscv  -D > riscv-test/asm/helloworld.asm

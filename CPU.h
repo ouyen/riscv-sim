@@ -89,9 +89,8 @@ class CPU {
     MemoryMangerUnit* MMU;
     uint64_t PC;
     uint64_t reg[32] = {0};
-    // uint32_t reg_lock[32];
-    // bitset<32> reg_lock = 0;
-    uint64_t reg_lock[32] = {0};
+
+
     bool exit_flag = false;
     uint64_t cycle_count = 0;
     uint64_t inst_count=0;
@@ -111,11 +110,11 @@ class CPU {
 
     bool stop_if_flag = false;
     uint64_t extender(uint32_t imm, uint8_t len, bool signext);
-    bool check_lock(REG_NAME r);
-    bool check_lock_ecall();
-    // uint32_t get_imm(uint32_t inst,OPCODE type);
-    bool single_step=false;
+
+
+    bool single_cycle=false;
     bool print_log=false;
+    bool step_run=false;
 
     struct IFID {
         bool bubble = true;

@@ -83,19 +83,19 @@ void CPU::run() {
                  << endl;
         
         IF();
-        if (single_step)
+        if (single_cycle)
             ifid_old = ifid_new;
 
         ID();
-        if (single_step)
+        if (single_cycle)
             idex_old = idex_new;
 
         EX();
-        if (single_step)
+        if (single_cycle)
             exmem_old = exmem_new;
 
         MEM();
-        if (single_step)
+        if (single_cycle)
             memwb_old = memwb_new;
 
         WB();
@@ -124,6 +124,10 @@ void CPU::run() {
         memset(&memwb_new, 0, sizeof(memwb_new));
 
         reg[0] = 0;
+        if(step_run){
+            cout << "Press any key to continue..." << endl;
+            getchar();
+        }
     }
 }
 
@@ -274,7 +278,7 @@ void CPU::ID() {
         // cout << endl;
     }
 
-    if (not single_step) {  // data hazards (1/2)
+    if (not single_cycle) {  // data hazards (1/2)
         if (idex_old.bubble==false and
             idex_old.Ctrl_WB == WB_WRITE_REG_FROM::WB_MEM and
             idex_old.rd != ZERO and
@@ -327,7 +331,7 @@ void CPU::EX() {
     uint64_t r2 = idex_old.rs2_reg;
     uint64_t imm = idex_old.imm;
 
-    if (not single_step) {  // data hazards (2/2)
+    if (not single_cycle) {  // data hazards (2/2)
         // 数据前递 data forward
         // 1.wb冒险
         if ((memwb_old.Ctrl_WB != WB_WRITE_REG_FROM::NOT_WRITE) and
@@ -561,7 +565,7 @@ void CPU::WB() {
 }
 
 void CPU::EX_compare_pc_decide_clear_pipeline(uint64_t new_pc) {
-    if (single_step) {
+    if (single_cycle) {
         if (print_log)
             cout << "from pc 0x" << this->PC << " to 0x" << new_pc << endl;
         this->PC = new_pc;

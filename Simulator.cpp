@@ -13,8 +13,9 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu);
 bool check_file_exists(string file_path);
 
 int main(int argc, char* argv[]) {
-    bool step = false;
+    bool single = false;
     bool print_log = false;
+    bool Step_run = false;
     string divid_line =
         "\n-----------------------------------------------------------\n";
 
@@ -27,13 +28,13 @@ int main(int argc, char* argv[]) {
         for (int i = 1; i < argc; ++i) {
             tmp_a = argv[i];
             if (tmp_a == "-s")
-                step = true;
+                single = true;
+            else if (tmp_a == "-S")
+                Step_run = true;
+            else if (tmp_a == "-p")
+                print_log = true;
             else {
-                if (tmp_a == "-p")
-                    print_log = true;
-                else {
-                    elf_file = tmp_a;
-                }
+                elf_file = tmp_a;
             }
         }
     }
@@ -56,40 +57,63 @@ int main(int argc, char* argv[]) {
     // prepare hardware
     StorageLatency ml;
     ml.bus_latency = 0;
-    ml.hit_latency = 100;
+    ml.hit_latency = 100 - 1;
     //   m.SetLatency(ml);
 
-    StorageLatency ll;
+    StorageLatency ll, l2, l3;
     ll.bus_latency = 0;
     ll.hit_latency = 0;
+
+    l2.hit_latency = 7;
+    l2.bus_latency = 0;
+
+    l3.bus_latency = 0;
+    l3.hit_latency = 19;
     // MemoryMangerUnit MMU;
     DRAM dram_mem(ml);
 
-    CacheConfig cfg;
-    cfg.size=(5+10);//32KB
-    cfg.associativity=3;//2**3=8
-    cfg.blcok_size=6;//2**6=64
-    cfg.write_through=0;
-    cfg.write_allocate=1;
+    CacheConfig cfg, cfg2, cfg3;
+    cfg.size = (5 + 10);    // 32KB
+    cfg.associativity = 3;  // 2**3=8
+    cfg.blcok_size = 6;     // 2**6=64
+    cfg.write_through = 0;
+    cfg.write_allocate = 1;
 
-    Cache L1(ll,cfg,&dram_mem);
-    MemoryMangerUnit mmu(&L1,&dram_mem);
+    cfg2.associativity = 3;
+    cfg2.blcok_size = 6;
+    cfg2.size = 18;  // 2**8=256
+    cfg2.write_through = 0;
+    cfg2.write_allocate = 1;
+
+    cfg3.associativity = 3;
+    cfg3.blcok_size = 6;
+    cfg3.size = 23;  // 2**3=8
+    cfg3.write_through = 0;
+    cfg3.write_allocate = 1;
+
+    Cache L3(l3, cfg3, &dram_mem);
+    Cache L2(l2, cfg2, &L3);
+    Cache L1(ll, cfg, &L2);
+    MemoryMangerUnit mmu(&L1, &dram_mem);
 
     // load elf
     ELFIO::elfio reader;
     reader.load(elf_file);
     auto pc = reader.get_entry();
     uint32_t sp = 0x80000000;
+    mmu.load_byte(pc, 1, 0);
+    mmu.load_byte(sp, 1, 0);
     CPU cpu(&mmu, pc, sp);
-    cpu.single_step = step;
+    cpu.single_cycle = single;
     cpu.print_log = print_log;
+    cpu.step_run=Step_run;
     // std::cout<<std::hex<<reader.get_entry()<<std::endl;
     loadElfToMemory(&reader, &mmu);
     cpu.run();
     cout << divid_line << endl << "[INFO] program exit ." << endl;
     cout << dec << "Inst count " << cpu.inst_count << endl;
     cout << "Cycle count " << cpu.cycle_count << endl;
-    cout<< "CPI: "<<(double)cpu.cycle_count/cpu.inst_count <<endl;
+    cout << "CPI: " << (double)cpu.cycle_count / cpu.inst_count << endl;
     cout << "Hazards by data: " << cpu.hazards_by_data_count << endl;
     cout << "Hazards by ctrl: " << cpu.hazards_by_ctrl_count << endl;
     cout << "Cycles (" << cpu.cycle_count << ") = 2+ Insts (" << cpu.inst_count
@@ -98,7 +122,10 @@ int main(int argc, char* argv[]) {
     cout << "Predict " << cpu.predict_count << " times, failed "
          << cpu.hazards_by_ctrl_count << " times, success "
          << cpu.predict_count - cpu.hazards_by_ctrl_count << " times" << endl;
-    cout<<mmu.total_latency_count<<" "<<L1.miss_count<<' '<<L1.hit_count<<endl;
+    cout << mmu.total_latency_count << " " << L1.miss_count << ' '
+         << L1.hit_count << endl;
+    cout << L2.miss_count << ' ' << L2.hit_count << endl;
+    cout << L3.miss_count << ' ' << L3.hit_count << endl;
     return 0;
 }
 
@@ -126,9 +153,9 @@ void loadElfToMemory(ELFIO::elfio* reader, MemoryMangerUnit* mmu) {
         uint32_t addr = (uint32_t)pseg->get_virtual_address();
         for (uint32_t p = addr; p < addr + memsz; ++p) {
             if (p < addr + filesz) {
-                mmu->store_byte(p, pseg->get_data()[p - addr], true,false);
+                mmu->store_byte(p, pseg->get_data()[p - addr], true, false);
             } else {
-                mmu->store_byte(p, 0, true,false);
+                mmu->store_byte(p, 0, true, false);
             }
         }
     }

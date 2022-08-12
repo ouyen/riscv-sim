@@ -12,6 +12,10 @@ CacheConfig L1_config;
 
 string file_path = "trace/01-mcf-gem5-xcg.trace";
 
+uint64_t _langencty_count=0;
+
+#define N 100
+
 typedef struct Operate {
     char type;
     uint32_t addr;
@@ -69,13 +73,14 @@ double test() {
 
     cout << "L1 miss count: " << L1.miss_count << endl;
     cout << "L1 hit count: " << L1.hit_count << endl;
-    cout << "L1 miss rate: " << miss_rate << endl<<endl;
-
+    cout << "L1 miss rate: " << miss_rate << endl;
+    cout<<"Latency: "<<MMU.total_latency_count<<endl<<endl;
+    _langencty_count=MMU.total_latency_count;
     return miss_rate;
 }
 
 void test_1() {
-    double res[11][11]={0};
+    double res[N][N]={0};
     for (int i = 15; i <= 25; ++i) {
         L1_config.size = i;
         L1_config.associativity = 3;
@@ -97,6 +102,62 @@ void test_1() {
     fclose(stdout);
 }
 
+void test_2(){
+    double res[N][N]={0};
+    for (int i = 15; i <= 25; ++i) {
+        L1_config.size = i;
+        L1_config.blcok_size = 6;
+        for (int j = 0; j <= 5; ++j) {
+            L1_config.associativity=j;
+            // test();
+            res[i][j] = test();
+        }
+    }
+
+    freopen("cache_test_result/test_2.csv", "w", stdout);
+    
+    printf("Size,Associativity,Miss Rate\n");
+    for(int i=15;i<=25;++i){
+        for(int j=0;j<=5;++j){
+            printf("%d,%d,%f\n",i,j,res[i][j]);
+        }
+    }
+    fclose(stdout);
+}
+
+void test_3(){
+    L1_config.write_through = 0;
+    L1_config.write_allocate = 0;
+    L1_config.size = 15;
+    L1_config.associativity = 3;
+    L1_config.blcok_size = 6;
+
+    dram_latency.bus_latency = 6;
+    dram_latency.hit_latency = 100;
+
+    L1_latency.bus_latency = 3;
+    L1_latency.hit_latency = 10;
+    uint64_t res[N][N]={0};
+    for(int i=15;i<=25;++i){
+        L1_config.size=i;
+        for(int j=0;j<=3;++j){
+            L1_config.write_through=j&0b1;
+            L1_config.write_allocate=(j&0b10)>>1;
+            _langencty_count=0;
+            test();
+            res[i][j] = _langencty_count;
+        }
+    }
+    freopen("cache_test_result/test_3.csv", "w", stdout);
+    printf("Size,Write Through,Write Allocate,Latency\n");
+    for(int i=15;i<=25;++i){
+        for(int j=0;j<=3;++j){
+            printf("%d,%d,%d,%d\n",i,j&0b1,(j&0b10)>>1,res[i][j]);
+        }
+    }
+    return;
+}
+
 int main() {
     load_operate_list();
     L1_config.write_through = 0;
@@ -111,6 +172,6 @@ int main() {
     L1_latency.bus_latency = 3;
     L1_latency.hit_latency = 10;
     // test();
-    test_1();
+    test_3();
     return 0;
 }
