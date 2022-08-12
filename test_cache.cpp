@@ -6,13 +6,14 @@
 using namespace std;
 
 StorageLatency dram_latency;
-StorageLatency L1_latency;
+StorageLatency L1_latency, L2_latency;
 
-CacheConfig L1_config;
+CacheConfig L1_config, L2_config;
+bool use_L2 = false;
 
 string file_path = "trace/01-mcf-gem5-xcg.trace";
 
-uint64_t _langencty_count=0;
+uint64_t _langencty_count = 0;
 
 #define N 100
 
@@ -52,7 +53,12 @@ double test() {
     cout << "Cache block size: " << (1 << (L1_config.blcok_size)) << "B"
          << endl;
     DRAM dram_mem(dram_latency);
+    // if(!use_L2)
     Cache L1(L1_latency, L1_config, &dram_mem);
+    Cache L2(L2_latency, L2_config, &dram_mem);
+    if (use_L2) {
+        L1.lower_memory=&L2;
+    }
     MemoryMangerUnit MMU(&L1, &dram_mem);
 
     char w_or_r = 0;
@@ -74,13 +80,19 @@ double test() {
     cout << "L1 miss count: " << L1.miss_count << endl;
     cout << "L1 hit count: " << L1.hit_count << endl;
     cout << "L1 miss rate: " << miss_rate << endl;
-    cout<<"Latency: "<<MMU.total_latency_count<<endl<<endl;
-    _langencty_count=MMU.total_latency_count;
+    if (use_L2) {
+        cout << "L2 miss count: " << L2.miss_count << endl;
+        cout << "L2 hit count: " << L2.hit_count << endl;
+        cout << "L2 miss rate: "
+             << (double)L2.miss_count / (L2.miss_count + L2.hit_count) << endl;
+    }
+    cout << "Latency: " << MMU.total_latency_count << endl << endl;
+    _langencty_count = MMU.total_latency_count;
     return miss_rate;
 }
 
 void test_1() {
-    double res[N][N]={0};
+    double res[N][N] = {0};
     for (int i = 15; i <= 25; ++i) {
         L1_config.size = i;
         L1_config.associativity = 3;
@@ -92,40 +104,40 @@ void test_1() {
     }
 
     freopen("cache_test_result/test_1.csv", "w", stdout);
-    
+
     printf("Size,Block Size,Miss Rate\n");
-    for(int i=15;i<=25;++i){
-        for(int j=0;j<=10;++j){
-            printf("%d,%d,%f\n",i,j,res[i][j]);
+    for (int i = 15; i <= 25; ++i) {
+        for (int j = 0; j <= 10; ++j) {
+            printf("%d,%d,%f\n", i, j, res[i][j]);
         }
     }
     fclose(stdout);
 }
 
-void test_2(){
-    double res[N][N]={0};
+void test_2() {
+    double res[N][N] = {0};
     for (int i = 15; i <= 25; ++i) {
         L1_config.size = i;
         L1_config.blcok_size = 6;
         for (int j = 0; j <= 5; ++j) {
-            L1_config.associativity=j;
+            L1_config.associativity = j;
             // test();
             res[i][j] = test();
         }
     }
 
     freopen("cache_test_result/test_2.csv", "w", stdout);
-    
+
     printf("Size,Associativity,Miss Rate\n");
-    for(int i=15;i<=25;++i){
-        for(int j=0;j<=5;++j){
-            printf("%d,%d,%f\n",i,j,res[i][j]);
+    for (int i = 15; i <= 25; ++i) {
+        for (int j = 0; j <= 5; ++j) {
+            printf("%d,%d,%f\n", i, j, res[i][j]);
         }
     }
     fclose(stdout);
 }
 
-void test_3(){
+void test_3() {
     L1_config.write_through = 0;
     L1_config.write_allocate = 0;
     L1_config.size = 15;
@@ -137,41 +149,56 @@ void test_3(){
 
     L1_latency.bus_latency = 3;
     L1_latency.hit_latency = 10;
-    uint64_t res[N][N]={0};
-    for(int i=15;i<=25;++i){
-        L1_config.size=i;
-        for(int j=0;j<=3;++j){
-            L1_config.write_through=j&0b1;
-            L1_config.write_allocate=(j&0b10)>>1;
-            _langencty_count=0;
+    uint64_t res[N][N] = {0};
+    for (int i = 15; i <= 25; ++i) {
+        L1_config.size = i;
+        for (int j = 0; j <= 3; ++j) {
+            L1_config.write_through = j & 0b1;
+            L1_config.write_allocate = (j & 0b10) >> 1;
+            _langencty_count = 0;
             test();
             res[i][j] = _langencty_count;
         }
     }
     freopen("cache_test_result/test_3.csv", "w", stdout);
     printf("Size,Write Through,Write Allocate,Latency\n");
-    for(int i=15;i<=25;++i){
-        for(int j=0;j<=3;++j){
-            printf("%d,%d,%d,%d\n",i,j&0b1,(j&0b10)>>1,res[i][j]);
+    for (int i = 15; i <= 25; ++i) {
+        for (int j = 0; j <= 3; ++j) {
+            printf("%d,%d,%d,%d\n", i, j & 0b1, (j & 0b10) >> 1, res[i][j]);
         }
     }
     return;
 }
 
+void test_4() {
+    CacheConfig L2;
+    use_L2 = 1;
+    test();
+}
+
 int main() {
     load_operate_list();
     L1_config.write_through = 0;
-    L1_config.write_allocate = 0;
+    L1_config.write_allocate = 1;
     L1_config.size = 15;
     L1_config.associativity = 3;
     L1_config.blcok_size = 6;
 
-    dram_latency.bus_latency = 6;
+    L2_config.write_through = 0;
+    L2_config.write_allocate = 1;
+    L2_config.size = 18;//256K
+    L2_config.associativity = 3;
+    L2_config.blcok_size = 6;
+
+    dram_latency.bus_latency = 0;
     dram_latency.hit_latency = 100;
 
-    L1_latency.bus_latency = 3;
-    L1_latency.hit_latency = 10;
+    L1_latency.bus_latency = 0;
+    L1_latency.hit_latency = 4;
+
+    L2_latency.bus_latency = 0;
+    L2_latency.hit_latency = 5;
     // test();
-    test_3();
+    test_4();
     return 0;
 }

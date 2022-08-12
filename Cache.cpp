@@ -6,13 +6,15 @@ Cache::Cache(StorageLatency _latency,
              Basic_Memory_Unit* _lower) {
     latency = _latency;
     this->config = _cacheconfig;
-    if(config.blcok_size>10) config.blcok_size=10;
+    if (config.blcok_size > 10)
+        config.blcok_size = 10;
     this->lower_memory = _lower;
-    max_addr = (1 << (config.size - config.associativity - config.blcok_size)) - 1;
+    max_addr =
+        (1 << (config.size - config.associativity - config.blcok_size)) - 1;
     max_associativity = (1 << config.associativity) - 1;
     hit_count = 0;
     miss_count = 0;
-    max_data=(1<<config.blcok_size)-1;
+    max_data = (1 << config.blcok_size) - 1;
     p_data = new Cache_Line*[max_addr + 1]();
 }
 
@@ -21,7 +23,7 @@ Cache::~Cache() {
     if (p_data == nullptr)
         return;
     for (i = 0; i <= max_addr; ++i) {
-        if (p_data[i]!=nullptr) {
+        if (p_data[i] != nullptr) {
             delete[] p_data[i];
             p_data[i] = nullptr;
         }
@@ -87,7 +89,10 @@ int Cache::cache_hit(const uint32_t& origin_addr) {
     return cache_hit(cache_addr, label);
 }
 
-void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
+void Cache::store_byte(uint32_t addr,
+                       uint8_t val,
+                       uint8_t& _latency,
+                       bool count) {
     auto cache_addr = get_cache_addr(addr);
     auto label = get_cache_label(addr);
     auto label_address = cache_hit(cache_addr, label);
@@ -103,7 +108,8 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
 
     if (label_address != -1) {
         // hit
-        ++hit_count;
+        if (count)
+            ++hit_count;
         p_data[cache_addr][label_address].data[data_addr] = val;
         if (!config.write_through) {
             _latency += (this->latency.hit_latency + this->latency.bus_latency);
@@ -114,7 +120,8 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
         }
     } else {
         // miss
-        ++miss_count;
+        if (count)
+            ++miss_count;
 
         // _latency += (this->latency.bus_latency);
 
@@ -124,7 +131,8 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
 
         else {  // write allocate
             label_address = add_cache_page(cache_addr, label);
-            if (p_data[cache_addr][label_address].null == false and p_data[cache_addr][label_address].label!=label) {
+            if (p_data[cache_addr][label_address].null == false and
+                p_data[cache_addr][label_address].label != label) {
                 // replace
                 if (config.write_through == false or
                     config.write_allocate == true) {
@@ -138,9 +146,10 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
                 p_data[cache_addr][label_address].data[0] =
                     this->lower_memory->load_byte(addr & (~max_data), _latency);
                 uint8_t tmp = 0;
-                for (int i = 1; i < max_data+1; ++i) {
+                for (int i = 1; i < max_data + 1; ++i) {
                     p_data[cache_addr][label_address].data[i] =
-                        this->lower_memory->load_byte(addr & (~max_data) + i, tmp);
+                        this->lower_memory->load_byte(addr & (~max_data) + i,
+                                                      tmp,false);
                 }
                 p_data[cache_addr][label_address].data[data_addr] = val;
             }
@@ -148,45 +157,50 @@ void Cache::store_byte(uint32_t addr, uint8_t val, uint8_t& _latency) {
     }
 }
 
-uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency) {
+uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency, bool count) {
     auto cache_addr = get_cache_addr(addr);
     auto label = get_cache_label(addr);
     auto label_address = cache_hit(cache_addr, label);
     auto data_addr = get_data_addr(addr);
     if (label_address != -1) {
-        ++hit_count;
+        if (count)
+            ++hit_count;
         _latency += (this->latency.hit_latency + this->latency.bus_latency);
         return p_data[cache_addr][label_address].data[data_addr];
     } else {
-        ++miss_count;
+        if (count)
+            ++miss_count;
         // _latency += (this->latency.bus_latency+this->latency.bus_latency);
         auto val = this->lower_memory->load_byte(addr, _latency);
         uint8_t tmp = 0;
         label_address = add_cache_page(cache_addr, label);
-        if(p_data[cache_addr][label_address].null==false)
+        if (p_data[cache_addr][label_address].null == false)
             write_back(cache_addr, label_address);
         p_data[cache_addr][label_address].null = false;
         p_data[cache_addr][label_address].label = label;
-        for (int i = 0; i < max_data+1; ++i) {
+        for (int i = 0; i < max_data + 1; ++i) {
             p_data[cache_addr][label_address].data[i] =
-                this->lower_memory->load_byte(addr & (~max_data) + i, tmp);
+                this->lower_memory->load_byte(addr & (~max_data) + i, tmp,false);
         }
         return val;
     }
 }
 
 void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
-    if(config.write_through==true and config.write_allocate==false) return;
-    if( p_data[cache_addr][label_addr].null==true) return;
+    if (config.write_through == true and config.write_allocate == false)
+        return;
+    if (p_data[cache_addr][label_addr].null == true)
+        return;
 
     if (config.write_through == false or config.write_allocate == true) {
         uint8_t tmp = 0;
         uint32_t label = p_data[cache_addr][label_addr].label;
-        uint32_t lower_addr = (get_origin_addr(cache_addr, label) & (~max_data));
+        uint32_t lower_addr =
+            (get_origin_addr(cache_addr, label) & (~max_data));
         // this->lower_memory->store_byte(lower_addr,p_data[cache_addr][label_addr].data[0],_latency);
-        for (int i = 0; i < max_data+1; ++i) {
+        for (int i = 0; i < max_data + 1; ++i) {
             this->lower_memory->store_byte(
-                lower_addr + i, p_data[cache_addr][label_addr].data[i], tmp);
+                lower_addr + i, p_data[cache_addr][label_addr].data[i], tmp,false);
         }
         p_data[cache_addr][label_addr].null = true;
     }
@@ -194,7 +208,8 @@ void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
 
 uint32_t Cache::get_origin_addr(const uint32_t& cache_addr,
                                 const uint32_t& label) {
-    return (cache_addr << max_addr) | (label << (config.size - config.associativity));
+    return (cache_addr << max_addr) |
+           (label << (config.size - config.associativity));
 }
 
 uint8_t Cache::ReplaceAlgorithm() {

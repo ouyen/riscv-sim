@@ -17,9 +17,13 @@ int main(int argc, char* argv[]) {
     bool single = false;
     bool print_log = false;
     bool Step_run = false;
+    bool count_cache=true;
     string divid_line =
         "\n-----------------------------------------------------------\n";
 
+#ifdef NOCACHE
+    count_cache=false;
+#endif
 #ifndef DEBUG
     // cin parameter
     // if (argc == 2)
@@ -115,22 +119,20 @@ int main(int argc, char* argv[]) {
     // std::cout<<std::hex<<reader.get_entry()<<std::endl;
     loadElfToMemory(&reader, &mmu);
     cpu.run();
+    auto cycles=cpu.cycle_count+mmu.total_latency_count*count_cache;
     cout << divid_line << endl << "[INFO] program exit ." << endl;
     cout << dec << "Inst count " << cpu.inst_count << endl;
-    cout << "Cycle count " << cpu.cycle_count << endl;
-    cout << "CPI: " << (double)cpu.cycle_count / cpu.inst_count << endl;
+    cout << "Cycle count " << cycles << endl;
+    cout << "CPI: " << (double)cycles / cpu.inst_count << endl;
     cout << "Hazards by data: " << cpu.hazards_by_data_count << endl;
     cout << "Hazards by ctrl: " << cpu.hazards_by_ctrl_count << endl;
+    cout<<"Hazards by memory: "<< mmu.total_latency_count<<endl;
     cout << "Cycles (" << cpu.cycle_count << ") = 2+ Insts (" << cpu.inst_count
          << ") + 2*Ctrl_hazard (" << cpu.hazards_by_ctrl_count
-         << ") + Data_hazards (" << cpu.hazards_by_data_count << ")" << endl;
+         << ") + Data_hazards (" << cpu.hazards_by_data_count << ")+ Memory_hazards ("<<mmu.total_latency_count*count_cache<<")" << endl;
     cout << "Predict " << cpu.predict_count << " times, failed "
          << cpu.hazards_by_ctrl_count << " times, success "
          << cpu.predict_count - cpu.hazards_by_ctrl_count << " times" << endl;
-    cout << mmu.total_latency_count << " " << L1.miss_count << ' '
-         << L1.hit_count << endl;
-    cout << L2.miss_count << ' ' << L2.hit_count << endl;
-    cout << L3.miss_count << ' ' << L3.hit_count << endl;
     return 0;
 }
 
