@@ -149,8 +149,9 @@ void Cache::store_byte(uint32_t addr,
                 for (int i = 1; i < max_data + 1; ++i) {
                     p_data[cache_addr][label_address].data[i] =
                         this->lower_memory->load_byte(addr & (~max_data) + i,
-                                                      tmp,false);
+                                                      tmp, false);
                 }
+                prefetch_data(addr);
                 p_data[cache_addr][label_address].data[data_addr] = val;
             }
         }
@@ -180,8 +181,10 @@ uint8_t Cache::load_byte(uint32_t addr, uint8_t& _latency, bool count) {
         p_data[cache_addr][label_address].label = label;
         for (int i = 0; i < max_data + 1; ++i) {
             p_data[cache_addr][label_address].data[i] =
-                this->lower_memory->load_byte(addr & (~max_data) + i, tmp,false);
+                this->lower_memory->load_byte(addr & (~max_data) + i, tmp,
+                                              false);
         }
+        prefetch_data(addr);
         return val;
     }
 }
@@ -200,7 +203,8 @@ void Cache::write_back(const uint32_t& cache_addr, const uint8_t& label_addr) {
         // this->lower_memory->store_byte(lower_addr,p_data[cache_addr][label_addr].data[0],_latency);
         for (int i = 0; i < max_data + 1; ++i) {
             this->lower_memory->store_byte(
-                lower_addr + i, p_data[cache_addr][label_addr].data[i], tmp,false);
+                lower_addr + i, p_data[cache_addr][label_addr].data[i], tmp,
+                false);
         }
         p_data[cache_addr][label_addr].null = true;
     }
@@ -216,4 +220,15 @@ uint8_t Cache::ReplaceAlgorithm() {
     default_random_engine e;
     uniform_int_distribution<unsigned> u(0, this->max_associativity);
     return u(e);
+}
+
+void Cache::prefetch_data(const uint32_t& addr) {
+    uint8_t tmp = 0;
+    if (prefetch) {
+        // p_data[cache_addr][label_address].data[i] =
+        this->lower_memory->load_byte((addr & (~max_data)) + (max_data + 1),
+                                      tmp, false);
+        this->lower_memory->load_byte((addr & (~max_data)) + 2*(max_data + 1),
+                                      tmp, false);
+    }
 }

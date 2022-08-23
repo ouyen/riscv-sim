@@ -12,6 +12,7 @@ CacheConfig L1_config, L2_config;
 bool use_L2 = false;
 
 string file_path = "trace/01-mcf-gem5-xcg.trace";
+// string file_path="trace/02-stream-gem5-xaa.trace";
 
 uint64_t _langencty_count = 0;
 
@@ -47,7 +48,7 @@ void load_operate_list() {
     fclose(stdin);
 }
 
-double test() {
+double test(bool prefetch=false) {
     cout << "Cache size: " << (1 << (L1_config.size)) << "B" << endl;
     cout << "Cache associativity: " << (1 << (L1_config.associativity)) << endl;
     cout << "Cache block size: " << (1 << (L1_config.blcok_size)) << "B"
@@ -60,7 +61,8 @@ double test() {
         L1.lower_memory=&L2;
     }
     MemoryMangerUnit MMU(&L1, &dram_mem);
-
+    L1.prefetch=prefetch;
+    // L2.prefetch=prefetch;
     char w_or_r = 0;
     uint32_t address;
     uint32_t result;
@@ -173,7 +175,7 @@ void test_3() {
 void test_4() {
     CacheConfig L2;
     use_L2 = 1;
-    test();
+    test(true);
 }
 
 int main() {

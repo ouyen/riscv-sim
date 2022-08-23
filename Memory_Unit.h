@@ -72,6 +72,7 @@ class Cache : public Basic_Memory_Unit {
     uint64_t miss_count = 0;
     uint32_t max_addr = 0;
     uint32_t max_data = 0;
+    bool prefetch=false;
 
     uint32_t get_cache_addr(const uint32_t& origin_addr);
     uint32_t get_cache_label(const uint32_t& origin_addr);
@@ -95,6 +96,8 @@ class Cache : public Basic_Memory_Unit {
     void write_back(const uint32_t& cache_addr, const uint8_t& label_addr);
 
     uint32_t get_origin_addr(const uint32_t& cache_addr, const uint32_t& label);
+
+    void prefetch_data(const uint32_t& origin_addr);
 };
 
 #endif
